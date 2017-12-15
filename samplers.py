@@ -716,3 +716,230 @@ class HMC_sampler(sampler):
         plt.suptitle("T_MH = %d (T_HMC = %d)" % ((idx_chain * (self.L) + l) * self.D, idx_chain), fontsize=25)
         plt.savefig(fname, dpi=100, bbox_inches = "tight")
         plt.close()       
+
+
+
+
+
+
+class movie_maker(object):
+    """
+    Takes HMC and MH samplers objects and make movies using MH time step.
+    """
+    def __init__(self, MH, HMC):
+        """
+        Args:
+        - MH: MH sampler after running chains.
+        - HMC: HMC sampler afer running chains.
+        """
+        self.MH = MH
+        self.HMC = HMC
+        
+        return
+    
+    def make_movie(self, T_last=-1, idx_start=0, fname_prefix="test-MH-HMC", dx =0.1, xmax=4, plot_normal=True, q0=None, cov0=False, plot_cov=True):
+        """
+        Creates a deck of png files that can be turned into a movie.
+        
+        Note each slide is indexed according to MH time unit.
+        
+        Args:
+        - T_last: The duration of the movie in units of MH step. 
+        If T_last exceeds the total number of steps, then maximum is used.
+        - idx_start: MH start index
+        """
+        assert idx_start >= 0
+        
+        # Setting the beginning and the final index.            
+        if T_last > self.MH.Niter:
+            idx_last = self.MH.Niter
+        else:
+            idx_last = T_last
+            
+        # Make a movie
+        counter = 0
+        for i in xrange(idx_start, idx_last):
+            if (counter % 10) == 0:
+                print "%d: Making slide %d" % (counter, i)
+            counter +=1
+            idx_slide = (i-idx_start)
+            self.make_slide(fname_prefix, idx_start, i, idx_slide, plot_normal=plot_normal, q0=q0, cov0=cov0, plot_cov=plot_cov, Ntotal=(idx_last-idx_start+1), xmax=xmax, dx=dx)
+
+        # Command for creating and movies and deleting slides.
+        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y %s-movie.mp4" % (fname_prefix,  fname_prefix)
+        
+        return 
+
+    
+    def make_slide(self, fname_prefix, idx_chain_start, idx_chain, idx_slide, dx =0.1, xmax=4, plot_normal=True, q0=None, cov0=False, plot_cov=True, Ntotal=100):
+        """
+        Make a slide for the movie.
+        Note that time is given in MH unit.
+        Args:
+        - fname_prefix: 
+        - idx_chain: Slide index.
+        - idx: Index to be appended to the slide.
+        - Ntotal: Total number of samples to be plotted
+        
+        Trajectory that gets accepted is colored red, otherwise black.                
+        """
+        pt_size_previous = 20
+        pt_size_current = pt_size_proposed = 50
+        
+        # Take samples of the first and second variables
+        q1 = self.MH.q_initial_chain[:, 0]
+        q2 = self.MH.q_initial_chain[:, 1]
+        q1_proposed = self.MH.q_proposed_chain[:, 0]
+        q2_proposed = self.MH.q_proposed_chain[:, 1]
+        
+        # Setting boundary and bin size
+        xmin = -xmax
+        
+        # If plotting normal model is requested
+        if plot_normal:
+            assert (q0 is not None) and (cov0 is not None)
+            assert q0.size == self.MH.D
+            xgrid = np.arange(xmin, xmax, 1e-2)
+            q1_marginal = multivariate_normal.pdf(xgrid, mean=q0[0], cov=cov0[0, 0]) * (Ntotal) * dx 
+            q2_marginal = multivariate_normal.pdf(xgrid, mean=q0[1], cov=cov0[1, 1]) * (Ntotal) * dx
+
+        fig, ax_list = plt.subplots(2, 4, figsize = (28, 12))
+        ft_size = 20
+        # ---- Scatter plot
+        # All previous points so far
+        ax_list[0, 0].scatter(q1[idx_chain_start:idx_chain], q2[idx_chain_start:idx_chain], s=pt_size_previous, c="black", edgecolors="none")
+        
+        # Current proposal
+        if self.MH.decision_chain[idx_chain, 0] == 1: # If the proposal is accepted
+            # Big black dot
+            ax_list[0, 0].scatter([q1_proposed[idx_chain]], [q2_proposed[idx_chain]], c="black", edgecolors="none", s=pt_size_proposed)
+        else:
+            # Empty circle
+            ax_list[0, 0].scatter([q1_proposed[idx_chain]], [q2_proposed[idx_chain]],  c="none", edgecolors="black", s=pt_size_proposed)
+        
+        # Initial location
+        ax_list[0, 0].scatter([q1[idx_chain]], [q2[idx_chain]], c="red", s=pt_size_current, edgecolors="none")
+        
+        # Line between current proposal and location
+        ax_list[0, 0].plot([q1[idx_chain], q1_proposed[idx_chain]], [q2[idx_chain], q2_proposed[idx_chain]], c="black", ls="--", lw = 1)
+        
+        
+        if plot_cov:
+            plot_cov_ellipse(ax_list[0, 0], [q0], [cov0], 0, 1, MoG_color="Blue")
+        ax_list[0, 0].set_xlabel("q1", fontsize=ft_size)
+        ax_list[0, 0].set_ylabel("q2", fontsize=ft_size)
+        ax_list[0, 0].axis("equal")
+        ax_list[0, 0].set_xlim([-xmax, xmax])
+        ax_list[0, 0].set_ylim([-xmax, xmax])
+
+        # q2 histogram
+#         if idx_chain_start < idx_chain:
+        ax_list[0, 1].hist(q2[idx_chain_start:idx_chain], bins=np.arange(-xmax, xmax, dx), histtype="step", color="black", orientation="horizontal")
+        if plot_normal:
+            assert (q0 is not None) and (cov0 is not None)
+            ax_list[0, 1].plot(q2_marginal, xgrid, c="green", lw=2)
+        ax_list[0, 1].set_ylim([-xmax, xmax])
+        ax_list[0, 1].set_xlim([0, q1_marginal.max() * 1.5])        
+        ax_list[0, 1].set_ylabel("q2", fontsize=ft_size)
+        # q1 histogram
+#         if idx_chain_start < idx_chain:        
+        ax_list[1, 0].hist(q1[idx_chain_start:idx_chain], bins=np.arange(-xmax, xmax, dx), histtype="step", color="black")
+        if plot_normal:
+            assert (q0 is not None) and (cov0 is not None)            
+            ax_list[1, 0].plot(xgrid, q1_marginal, c="green", lw=2)
+        ax_list[1, 0].set_xlim([-xmax, xmax])
+        ax_list[1, 0].set_ylim([0, q1_marginal.max() * 1.5])                
+        ax_list[1, 0].set_xlabel("q1", fontsize=ft_size)
+
+        # Show stats
+        ft_size2 = 15
+        ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
+        ax_list[1, 1].text(0.1, 0.8, "D/Nchain/Niter/Warm-up/Thin", fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.7, "%d\%d\%d\%d\%d" % (self.MH.D, self.MH.Nchain, self.MH.Niter, self.MH.warm_up_num, self.MH.thin_rate), fontsize=ft_size2)        
+        ax_list[1, 1].text(0.1, 0.6, r"R q1/q2: %.3f/%.3f" % (self.MH.R_q[0], self.MH.R_q[1]), fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.5, "R median, std: %.3f/ %.3f" % (np.median(self.MH.R_q), np.std(self.MH.R_q)), fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.4, "Accept rate before warm up: %.3f" % (self.MH.accept_R_warm_up), fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.3, "Accept rate after warm up: %.3f" % (self.MH.accept_R), fontsize=ft_size2)        
+        ax_list[1, 1].set_xlim([0, 1])
+        ax_list[1, 1].set_ylim([0, 1])
+        
+    
+    
+    
+        # ----- HMC
+        pt_size_previous = 20 # Accepted points between idx_start and now.
+        pt_size_current = pt_size_proposed = 50
+        pt_size_phi = 30 # Size of the trajectory bubble.
+        
+        idx_chain_MH = idx_chain
+        idx_chain_start = idx_chain_start //(self.HMC.D * (self.HMC.L))
+        idx_chain, l = idx_chain //(self.HMC.D * (self.HMC.L)), (idx_chain % (self.HMC.D * (self.HMC.L)))//self.HMC.D
+        print idx_chain_MH, idx_chain, l 
+        
+        # Take q1 and q2 that have been accepted so far.
+        q1 = self.HMC.phi_q[idx_chain_start:idx_chain, 0, 0]
+        q2 = self.HMC.phi_q[idx_chain_start:idx_chain, 0, 1]
+        
+        ft_size = 20
+        # ---- Scatter plot
+        # All previous points so far
+        ax_list[0, 2].scatter(q1, q2, s=pt_size_previous, c="black", edgecolors="none")
+        
+        # Current point 
+        ax_list[0, 2].scatter([self.HMC.phi_q[idx_chain, 0, 0]], [self.HMC.phi_q[idx_chain, 0, 1]], c="red", edgecolors="none", s=pt_size_current)
+        
+        # Current trajectory
+        if self.HMC.decision_chain[idx_chain, 0] == 1: # If the proposal is accepted
+            # Empty circle -- red
+            ax_list[0, 2].scatter(self.HMC.phi_q[idx_chain, :l+2, 0], self.HMC.phi_q[idx_chain, :l+2, 1], c="none", edgecolors="red", s=pt_size_phi)
+            ax_list[0, 2].plot(self.HMC.phi_q[idx_chain, :l+2, 0], self.HMC.phi_q[idx_chain, :l+2, 1], c="red", ls="--", lw=1) 
+        else:
+            # Empty circle -- black
+            ax_list[0, 2].scatter(self.HMC.phi_q[idx_chain, :l+2, 0], self.HMC.phi_q[idx_chain, :l+2, 1],  c="none", edgecolors="black", s=pt_size_phi)
+            ax_list[0, 2].plot(self.HMC.phi_q[idx_chain, :l+2, 0], self.HMC.phi_q[idx_chain, :l+2, 1], c="black", ls="--", lw=1) 
+        
+        if plot_cov:
+            plot_cov_ellipse(ax_list[0, 2], [q0], [cov0], 0, 1, MoG_color="Blue")
+        ax_list[0, 2].set_xlabel("q1", fontsize=ft_size)
+        ax_list[0, 2].set_ylabel("q2", fontsize=ft_size)
+        ax_list[0, 2].axis("equal")
+        ax_list[0, 2].set_xlim([-xmax, xmax])
+        ax_list[0, 2].set_ylim([-xmax, xmax])
+
+        # q2 histogram
+#         if idx_chain_start < idx_chain:
+        ax_list[0, 3].hist(q2, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black", orientation="horizontal")
+        if plot_normal:
+            assert (q0 is not None) and (cov0 is not None)
+            ax_list[0, 3].plot(q2_marginal, xgrid, c="green", lw=2)
+        ax_list[0, 3].set_ylim([-xmax, xmax])
+        ax_list[0, 3].set_xlim([0, q1_marginal.max() * 1.5])        
+        ax_list[0, 3].set_ylabel("q2", fontsize=ft_size)
+        # q1 histogram
+#         if idx_chain_start < idx_chain:        
+        ax_list[1, 2].hist(q1, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black")
+        if plot_normal:
+            assert (q0 is not None) and (cov0 is not None)            
+            ax_list[1, 2].plot(xgrid, q1_marginal, c="green", lw=2)
+        ax_list[1, 2].set_xlim([-xmax, xmax])
+        ax_list[1, 2].set_ylim([0, q1_marginal.max() * 1.5])                
+        ax_list[1, 2].set_xlabel("q1", fontsize=ft_size)
+
+        # Show stats
+        ft_size2 = 15
+        ax_list[1, 3].scatter([0.0, 1.], [0.0, 1.], c="none")
+        ax_list[1, 3].text(0.1, 0.8, "D/Nchain/Niter/Warm-up/Thin", fontsize=ft_size2)
+        ax_list[1, 3].text(0.1, 0.7, "%d\%d\%d\%d\%d" % (self.HMC.D, self.HMC.Nchain, self.HMC.Niter, self.HMC.warm_up_num, self.HMC.thin_rate), fontsize=ft_size2)        
+        ax_list[1, 3].text(0.1, 0.6, r"R q1/q2: %.3f/%.3f" % (self.HMC.R_q[0], self.HMC.R_q[1]), fontsize=ft_size2)
+        ax_list[1, 3].text(0.1, 0.5, "R median, std: %.3f/ %.3f" % (np.median(self.HMC.R_q), np.std(self.HMC.R_q)), fontsize=ft_size2)
+        ax_list[1, 3].text(0.1, 0.4, "Accept rate before warm up: %.3f" % (self.HMC.accept_R_warm_up), fontsize=ft_size2)
+        ax_list[1, 3].text(0.1, 0.3, "Accept rate after warm up: %.3f" % (self.HMC.accept_R), fontsize=ft_size2)        
+        ax_list[1, 3].set_xlim([0, 1])
+        ax_list[1, 3].set_ylim([0, 1])
+        
+        fname = fname_prefix + ("-%d" % idx_slide)
+        plt.suptitle("T_MH = %d (T_HMC = %d)" % (idx_chain_MH, idx_chain), fontsize=25)
+        plt.savefig(fname, dpi=100, bbox_inches = "tight")
+#         plt.show()
+        plt.close()           
+
