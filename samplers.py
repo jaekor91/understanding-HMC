@@ -395,13 +395,15 @@ class HMC_sampler(sampler):
     """
     
     def __init__(self, D, V, dVdq, Nchain=2, Niter=1000, thin_rate=1, warm_up_frac=0.1, warm_up_num=None, \
-                 cov_p=None, sampler_type="Fixed", L=None, dt=None):
+                 cov_p=None, sampler_type="Fixed", L=None, dt=None, L_low=None, L_high=None):
         """
         Args: See Sampler class constructor for other variables.
         - V: The potential function which is the negative lnL.
         - dVdq: The gradient of the potential function to be supplied by the user.
         - cov_p: Covariance matrix of the momentum distribution assuming Gaussian momentum distribution.
-        - L, dt: Number of steps and time step to be taken for each sample if sampler type is "Fixed".
+        - dt: Time step.        
+        - L: Number of steps to be taken for each sample if sampler type is "Fixed". 
+        - L_low, L_high: If "Random" sampler is chosen, then vary the trajectory length as a random sample from [L_low, L_high]. 
         - sampler_type = "Fixed", "Random", or "NUTS"
         """
         # parent constructor
@@ -413,11 +415,18 @@ class HMC_sampler(sampler):
         
         # Which sampler to use?
         assert (sampler_type=="Fixed") or (sampler_type=="Random") or (sampler_type=="NUTS")
+        assert dt is not None
+        self.dt = dt
         self.sampler_type = sampler_type
         if self.sampler_type == "Fixed":
-            assert (L is not None) and (dt is not None)
+            assert (L is not None)
             self.L = L
-            self.dt = dt
+        elif self.sampler_type == "Random":
+            assert (L_low is not None) and (L_high is not None)
+            self.L_low = L_low
+            self.L_high = L_high
+
+
         
         # Momentum covariance matrix and its inverse
         if cov_p is None: 
