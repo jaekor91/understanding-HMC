@@ -284,7 +284,7 @@ class MH_sampler(sampler):
             counter +=1
         
         # Command for creating and movies and deleting slides.
-        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y output.mp4" % fname_prefix
+        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y %s-movie.mp4" % (fname_prefix, fname_prefix)
         
         return 
     
@@ -615,7 +615,7 @@ class HMC_sampler(sampler):
                     print "%d: Making slide (%d, %d)" % (counter, i, l)
                 counter +=1
         # Command for creating and movies and deleting slides.
-        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y output.mp4" % fname_prefix
+        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y %s-movie.mp4"  % (fname_prefix, fname_prefix)
         
         return 
     
