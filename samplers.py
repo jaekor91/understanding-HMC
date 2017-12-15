@@ -405,7 +405,7 @@ class HMC_sampler(sampler):
         - sampler_type = "Fixed", "Random", or "NUTS"
         """
         # parent constructor
-        sampler.__init__(self, D=D, target_lnL=target_lnL, Nchain=Nchain, Niter=Niter, thin_rate=thin_rate, warm_up_frac=warm_up_frac, warm_up_num=warm_up_num)
+        sampler.__init__(self, D=D, target_lnL=None, Nchain=Nchain, Niter=Niter, thin_rate=thin_rate, warm_up_frac=warm_up_frac, warm_up_num=warm_up_num)
         
         # Save the potential and its gradient functions
         self.V = V
@@ -713,6 +713,6 @@ class HMC_sampler(sampler):
         ax_list[1, 1].set_ylim([0, 1])
         
         fname = fname_prefix + ("-%d" % idx_slide)
-        plt.suptitle("T_MH = %d (T_HMC = %d)" % ((idx_chain * (self.L) + l) * D, idx_chain), fontsize=25)
+        plt.suptitle("T_MH = %d (T_HMC = %d)" % ((idx_chain * (self.L) + l) * self.D, idx_chain), fontsize=25)
         plt.savefig(fname, dpi=100, bbox_inches = "tight")
         plt.close()       
