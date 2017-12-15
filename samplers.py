@@ -478,6 +478,8 @@ class HMC_sampler(sampler):
     
         # Check if the correct number of starting points have been        
         assert q_start.shape[0] == self.Nchain
+        assert ~save_chain # Currently, saving chain is not supported. To support this feature
+        # and subsequent movie making, the current and the make_movie function has to be altered.
     
         if (save_chain):
             self.decision_chain = np.zeros((self.Niter, 1), dtype=np.int)
