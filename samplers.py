@@ -751,15 +751,32 @@ class HMC_sampler(sampler):
                 # Live points from the new trajectory
                 live_point_q_new = None
                 live_point_p_new = None
-                # Left boundary point
+                # Left and right boundary point -- Initial point is both left and right boundary points initially.
                 left_q = live_point_q_old
                 left_p = live_point_p_old
-                # Right boundary point
-                right_q = None
-                right_p = None
+                right_q = live_point_q_old
+                right_p = live_point_p_old
+                # Total pi(z)
+                pi_old = None
+                pi_new = None
 
                 # Main sampling occurs here
-                for l in xrange(1, self.log2L):
+                for d in xrange(0, self.log2L):
+                    L_new_sub = 2**d # Length of new sub trajectory
+                    u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
+
+                    # Constructing the new trajectory with progressive updating and keeping
+                    for k in xrange(L_new_sub):
+                        # pass
+
+                        # Update the boundary point if last
+                        if k == L_new_sub-1:
+                            if u_dir == 0:
+                                right_q, right_p = q_tmp, p_tmp
+                            else:
+                                left_q, left_p = q_tmp, p_tmp
+
+
                 #     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
                 #     if save_chain and (m == 0):
                 #         assert False
