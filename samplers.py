@@ -768,22 +768,36 @@ class HMC_sampler(sampler):
                     L_new_sub = 2**d # Length of new sub trajectory
                     u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
 
-                    # Constructing the new trajectory with progressive updating and keeping
-                    for k in xrange(L_new_sub):
-                        # pass
+                    # Array for saving the energies corresponding to the new sub-trajectory
+                    Es_new = np.zeros(L_new_sub, dtype=float)
 
-                        # Update the boundary point if last
-                        if k == L_new_sub-1:
-                            if u_dir == 0:
-                                right_q, right_p = q_tmp, p_tmp
-                            else:
-                                left_q, left_p = q_tmp, p_tmp
+                    # Initial point of the trajectory
+                    if u_dir == 0: # Integrate forward
+                        p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
+                    else: # Integrate backward
+                        p_tmp, q_tmp = self.leap_frog(-p_tmp, q_tmp)
+                    live_point_q_new, live_point_p_new = q_tmp, p_tmp
+                    Es_new[0] = self.E(q_tmp, p_tmp)
+
+                    # Constructing the new trajectory with progressive updating.
+                    # - Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
+                    # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
+                    # Else retain the old point.                    
+                    for k in xrange(1, L_new_sub):
+                        p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
+                        Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
+                        u = np.random.random() # Draw random uniform [0, 1]
 
 
-                #     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
-                #     if save_chain and (m == 0):
-                #         assert False
-                #         self.phi_q[i, l, :] = q_tmp
+
+                    # Update the boundary point if last                        
+                    if u_dir == 0: 
+                        right_q, right_p = q_tmp, p_tmp
+                    else: # Integrate backward
+                        left_q, left_p = q_tmp, p_tmp
+
+                    # Biased trajectory sampling
+
 
                 # Compute final energy and save.
                 E_final = self.E(q_tmp, p_tmp)
