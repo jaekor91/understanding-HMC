@@ -721,12 +721,13 @@ class HMC_sampler(sampler):
             self.q_chain[m, 0, :] = q_start[m]
             q_initial = q_start[m]
             p_tmp = self.p_sample()[0] # Sample momentun
-            self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
-            self.Eq_chain[m, 0, 0] = self.K(p_tmp)
+
+            # self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
+            # self.Eq_chain[m, 0, 0] = self.K(p_tmp)
             # Save the initial point of the trajectory if asked for.
-            if save_chain and (m==0):
-                assert False
-                self.phi_q[0, 0, :] = q_initial            
+            # if save_chain and (m==0):
+            #     assert False
+            #     self.phi_q[0, 0, :] = q_initial            
 
             for i in xrange(self.Niter): # For each step
                 # Initial position/momenutm
@@ -813,7 +814,7 @@ class HMC_sampler(sampler):
                     live_point_p_old = live_point_p_new
                     live_point_q_old = live_point_q_new
                     live_point_q_new, live_point_p_new = None, None
-                Es_old = np.concatenate(Es_old, Es_new)
+                Es_old = np.concatenate((Es_old, Es_new))
                 Es_new = None
 
                 # # Compute final energy and save.
@@ -828,19 +829,19 @@ class HMC_sampler(sampler):
                 # if (save_chain) and (m==0):
                 #     self.decision_chain[i, 0] = 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
-                    accept_counter +=1                            
-                else:
-                    accept_counter_warm_up += 1                        
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial
+                    # accept_counter +=1                            
+                # else:
+                    # accept_counter_warm_up += 1                        
             
             dt = time.time() - start
             print "Time taken: %.2f\n" % dt 
 
-        print "Compute acceptance rate"
-        self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
-        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
-        print "During warm up: %.3f" % self.accept_R_warm_up
-        print "After warm up: %.3f" % self.accept_R
+        # print "Compute acceptance rate"
+        # self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
+        # self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
+        # print "During warm up: %.3f" % self.accept_R_warm_up
+        # print "After warm up: %.3f" % self.accept_R
         print "Complete"            
 
         return         
