@@ -663,24 +663,26 @@ class HMC_sampler(sampler):
 
     def gen_sample_static1(self, q_start, save_chain, verbose):
         """
-        - Static implementation -- Efficient, doubling sampling appraoch: 
-        Start with an initial point. Integrate forward or backward, and 
-        therefore doubling the trajectory length. Do the Benouli sampling 
-        of the trajectory. Next, integrate backward or forward by *2^L_current* 
-        (so initially this is 2). While doing this, perform uniform progressive sampling. 
-        That is the first new point is the live point of the new trajectory. 
-        The live point gets updated as the uniform progressive sampling approach described above. 
-        While updates are being made be sure to save sum_z pi(z) for the new trajectory. 
-        Perform Bernouli sampling of the trajectory.
 
-        - Static implementation -- Efficient, biased sampling approach: 
-        Let's assume we are using this in combination with the trajectory 
-        doubling scheme mentioned above. Every time with compute a new trajectory 
-        (and pick a live point based on uniform progress sampling), we then next 
-        perform a Bernouli sampling with min(1, w_new//w_old) for the new trajectory. 
-        If w_new = w_old, as in the case of doubling trajectory scheme with exact 
-        energy computation, then we always pick points that are futher away from 
-        the initial point. If trajectory becomes worse, then the bias becomes less prominent.
+        Efficient sampling approach with
+        - Doubling of trajectory until the total length becomes L;
+        - From each new segment of the trajectory, perform uniform progressive sampling; and
+        - Perform biased trajectory sampling.
+
+        An example iteration:
+        - Start with the initial point. Trajectory length is 1. The initial point is the live point.
+        Compute the energy H(z) and pi(z) = e^-H(z).
+        - Flip a coin and double the trajectory backward or forward. As you compute the trajectory
+        keep a cumulative sum of pi(z) for the whole trajectory, progressively updating the live point
+        for the new trajectory. Save the last point of the trajectory as well. 
+            - Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
+            to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
+            Else retain the old point.
+        - Perform a biased trajectory sampling and keep one live point:
+            - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
+        - Repeat above two steps until the desired trajectory length is reached.
+        - In each step, we keep track of the live point from old trajectory, the live point from the 
+        new trajectory, the most backward or forward point. Hence one keeps at most three points.
 
         - save_chain (currently not supported): If True, in addition to saving all warmed-up and thinned samples,
         save in an array the following (only the first chain):
