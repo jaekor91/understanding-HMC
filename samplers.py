@@ -860,7 +860,7 @@ class HMC_sampler(sampler):
         return         
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose):
+    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True):
         """
         The same as _static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
@@ -869,6 +869,7 @@ class HMC_sampler(sampler):
         save in an array the following (only the first chain):
         1) phi_q (Niter, L, D): The full trajectory starting with the initial.
         2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
+        - first: If true, save the first trajectory.
         """
     
         # Check if the correct number of starting points have been        
@@ -939,10 +940,11 @@ class HMC_sampler(sampler):
                 left_terminate = False
                 right_terminate = False
 
-                # self.single_traj = [q_tmp]
-                # self.single_traj_live = [live_point_q_old]
+                if first:
+                    self.single_traj = [q_tmp]
+                    self.single_traj_live = [live_point_q_old]
                 d = 0
-                while ~left_terminate and ~right_terminate:
+                while (~left_terminate) and (~right_terminate):
                     if d > self.d_max-1:
                         print "d must be samller than d_max = %d" % self.d_max
                         assert False
@@ -960,8 +962,9 @@ class HMC_sampler(sampler):
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     Es_new[0] = self.E(q_tmp, p_tmp)
 
-                    # self.single_traj.append(q_tmp)
-                    # self.single_traj_live.append(live_point_q_new)
+                    if first:
+                        self.single_traj.append(q_tmp)
+                        self.single_traj_live.append(live_point_q_new)
                     # Constructing the new trajectory with progressive updating.
                     # Only if the new trajectory length is greater than 1
                     if L_new_sub > 1:
@@ -979,8 +982,9 @@ class HMC_sampler(sampler):
                             if u > r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
-                            # self.single_traj.append(q_tmp)
-                            # self.single_traj_live.append(live_point_q_new)
+                            if first:
+                                self.single_traj.append(q_tmp)
+                                self.single_traj_live.append(live_point_q_new)
 
                     # Update the boundary point if last                        
                     if u_dir == 0: 
@@ -1007,15 +1011,14 @@ class HMC_sampler(sampler):
                     Es_old = np.concatenate((Es_old, Es_new))
                     Es_new = None
 
-                    # Next doubling length 2**d
-                    d +=1
-
                     # Check for termination condition
                     Dq = right_q - left_q
                     right_terminate = np.dot(Dq, right_p) < 0
-                    left_terminate = np.dot(-Dq, left_p) < 0
+                    left_terminate = np.dot(Dq, left_p) > 0
 
-                # assert False
+                    # Next doubling length 2**d
+                    d +=1
+
 
                 # # Compute final energy and save.
                 # E_final = self.E(q_tmp, p_tmp)
