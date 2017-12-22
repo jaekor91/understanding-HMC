@@ -753,7 +753,7 @@ class HMC_sampler(sampler):
                 live_point_p_new = None
                 # Left and right boundary point -- Initial point is both left and right boundary points initially.
                 left_q = live_point_q_old
-                left_p = live_point_p_old
+                left_p = -live_point_p_old
                 right_q = live_point_q_old
                 right_p = live_point_p_old
                 # w = sum_z pi_z
@@ -773,9 +773,9 @@ class HMC_sampler(sampler):
 
                     # Initial point of the trajectory
                     if u_dir == 0: # Integrate forward
-                        p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
+                        p_tmp, q_tmp = self.leap_frog(right_p, right_q)
                     else: # Integrate backward
-                        p_tmp, q_tmp = self.leap_frog(-p_tmp, q_tmp)
+                        p_tmp, q_tmp = self.leap_frog(left_p, left_q)
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     Es_new[0] = self.E(q_tmp, p_tmp)
 
@@ -803,36 +803,35 @@ class HMC_sampler(sampler):
                     else: # Integrate backward
                         left_q, left_p = q_tmp, p_tmp
 
-                    # Biased trajectory sampling
-                    # - Perform a biased trajectory sampling and keep one live point:
-                    # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
+                # Biased trajectory sampling
+                # - Perform a biased trajectory sampling and keep one live point:
+                # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
+                u = np.random.random() # Draw random uniform [0, 1]
+                E_max = max(np.max(Es_new), np.max(Es_old))
+                r = min(1, np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max))))
+                if u < r:
+                    live_point_p_old = live_point_p_new
+                    live_point_q_old = live_point_q_new
+                    live_point_q_new, live_point_p_new = None, None
+                Es_old = np.concatenate(Es_old, Es_new)
+                Es_new = None
 
-                    u = np.random.random() # Draw random uniform [0, 1]
-
-
-
-                # Compute final energy and save.
-                E_final = self.E(q_tmp, p_tmp)
+                # # Compute final energy and save.
+                # E_final = self.E(q_tmp, p_tmp)
                 
-                # Save Kinetic energy
-                if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
-                    self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
+                # # Save Kinetic energy
+                # if i >= self.warm_up_num: # Save the right cadence of samples.
+                #     self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
+                #     self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
                     
-                # With correct probability, accept or reject the last proposal.
-                dE = E_final - E_initial
-                lnu = np.log(np.random.random(1))        
-                if (dE < 0) or (lnu < -dE): # If accepted.
-                    q_initial = q_tmp
-                    if (save_chain) and (m==0):
-                        self.decision_chain[i, 0] = 1
-                    if i >= self.warm_up_num: # Save the right cadence of samples.
-                        self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
-                        accept_counter +=1                            
-                    else:
-                        accept_counter_warm_up += 1                        
-                else: # Otherwise proposal rejected.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial
+                q_initial = live_point_q_old
+                # if (save_chain) and (m==0):
+                #     self.decision_chain[i, 0] = 1
+                if i >= self.warm_up_num: # Save the right cadence of samples.
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
+                    accept_counter +=1                            
+                else:
+                    accept_counter_warm_up += 1                        
             
             dt = time.time() - start
             print "Time taken: %.2f\n" % dt 
