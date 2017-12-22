@@ -396,7 +396,7 @@ class HMC_sampler(sampler):
     """
     
     def __init__(self, D, V, dVdq, Nchain=2, Niter=1000, thin_rate=1, warm_up_frac=0.1, warm_up_num=None, \
-                 cov_p=None, sampler_type="Fixed", L=None, dt=None, L_low=None, L_high=None, log2L=None):
+                 cov_p=None, sampler_type="Fixed", L=None, dt=None, L_low=None, L_high=None, log2L=None, d_max=10):
         """
         Args: See Sampler class constructor for other variables.
         - V: The potential function which is the negative lnL.
@@ -430,6 +430,9 @@ class HMC_sampler(sampler):
         elif self.sampler_type == "Static":
             assert (log2L is not None)
             self.log2L =log2L
+        elif self.sampler_type == "NUTS":
+            assert d_max is not None
+            self.d_max = d_max
 
 
         
@@ -467,7 +470,8 @@ class HMC_sampler(sampler):
             self.gen_sample_random(q_start, save_chain, verbose)
         elif (self.sampler_type == "Static"):
             self.gen_sample_static(q_start, save_chain, verbose)
-        # Other samplers come here
+        elif (self.sampler_type == "NUTS"):
+            self.gen_sample_NUTS(q_start, save_chain, verbose)
             
         return
 
@@ -851,6 +855,196 @@ class HMC_sampler(sampler):
         self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
         print "During warm up: %.3f" % self.accept_R_warm_up
         print "After warm up: %.3f" % self.accept_R
+        print "Complete"            
+
+        return         
+
+
+    def gen_sample_NUTS(self, q_start, save_chain, verbose):
+        """
+        The same as _static except trajectory length is determined by the termination condition
+        and pathological sub-trajectories are rejected (not included in the sampling).
+
+        - save_chain (currently not supported): If True, in addition to saving all warmed-up and thinned samples,
+        save in an array the following (only the first chain):
+        1) phi_q (Niter, L, D): The full trajectory starting with the initial.
+        2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
+        """
+    
+        # Check if the correct number of starting points have been        
+        assert q_start.shape[0] == self.Nchain
+    
+        # if (save_chain):
+        #     assert False
+        #     self.decision_chain = np.zeros((self.Niter, 1), dtype=np.int)
+        #     self.phi_q = np.zeros((self.Niter, self.L+1, self.D), dtype=np.float)
+            # +1 because we want to count the initial AND final.
+            
+        # Variables for computing acceptance rate
+        accept_counter_warm_up = 0
+        accept_counter = 0
+        total_length = 0 # Used to compute the total amount of computation
+        
+        # Executing HMC
+        for m in xrange(self.Nchain): # For each chain
+            start = time.time()   
+            
+            # Initializing the chain
+            if verbose:
+                print "Running chain %d" % m                
+            
+            # Initial points
+            q_tmp = q_start[m]
+
+            # self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
+            # self.Eq_chain[m, 0, 0] = self.K(p_tmp)
+            # Save the initial point of the trajectory if asked for.
+            # if save_chain and (m==0):
+            #     assert False
+            #     self.phi_q[0, 0, :] = q_initial            
+
+            for i in xrange(self.Niter): # For each step
+                # Momentum resampling
+                p_tmp = self.p_sample()[0] # Sample momentun
+
+                # Compute kinetic initial energy and save
+                K_initial = self.K(p_tmp)
+                
+                # Compute the initial Energy
+                E_initial = self.E(q_tmp, p_tmp)
+                
+                # # Save the initial point of the trajectory if asked for.
+                # if save_chain and (m==0):
+                #     assert False
+                #     self.phi_q[i, 0, :] = q_initial
+                    
+                # Perform HMC integration and save the trajectory if requested.
+                # Live points from the old trajectory
+                live_point_q_old = np.copy(q_tmp)
+                live_point_p_old = np.copy(p_tmp)
+                # Live points from the new trajectory
+                live_point_q_new = None
+                live_point_p_new = None
+                # Left and right boundary point -- Initial point is both left and right boundary points initially.
+                left_q = q_tmp
+                left_p = -p_tmp
+                right_q = q_tmp
+                right_p = p_tmp
+                # w = sum_z pi_z
+                Es_old = np.array([E_initial]) # We save all the energies
+                Es_new = None # For the new trajectory, we save all of the energies.
+
+                # Main sampling occurs here.
+                # Continue doubling the trajectory until termination conditions are reached.
+                left_terminate = False
+                right_terminate = False
+
+                # self.single_traj = [q_tmp]
+                # self.single_traj_live = [live_point_q_old]
+                d = 0
+                while ~left_terminate and ~right_terminate:
+                    if d > self.d_max-1:
+                        print "d must be samller than d_max = %d" % self.d_max
+                        assert False
+                    L_new_sub = 2**d # Length of new sub trajectory
+                    u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
+
+                    # Array for saving the energies corresponding to the new sub-trajectory
+                    Es_new = np.zeros(L_new_sub, dtype=float)
+
+                    # Initial point of the trajectory
+                    if u_dir == 0: # Integrate forward
+                        p_tmp, q_tmp = self.leap_frog(right_p, right_q)
+                    else: # Integrate backward
+                        p_tmp, q_tmp = self.leap_frog(left_p, left_q)
+                    live_point_q_new, live_point_p_new = q_tmp, p_tmp
+                    Es_new[0] = self.E(q_tmp, p_tmp)
+
+                    # self.single_traj.append(q_tmp)
+                    # self.single_traj_live.append(live_point_q_new)
+                    # Constructing the new trajectory with progressive updating.
+                    # Only if the new trajectory length is greater than 1
+                    if L_new_sub > 1:
+                        # Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
+                        # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
+                        # Else retain the old point.                    
+                        for k in xrange(1, L_new_sub):
+                            p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
+                            Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
+                            u = np.random.random() # Draw random uniform [0, 1]
+                            E_max = np.max(Es_new[:k+1])# Get the maximum energy value
+                            numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
+                            denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
+                            r = numerator/denominator# Compute the desired ratio.
+                            if u > r:
+                                # Update the live point.
+                                live_point_q_new, live_point_p_new = q_tmp, p_tmp
+                            # self.single_traj.append(q_tmp)
+                            # self.single_traj_live.append(live_point_q_new)
+
+                    # Update the boundary point if last                        
+                    if u_dir == 0: 
+                        right_q, right_p = q_tmp, p_tmp
+                    else: # Integrate backward
+                        left_q, left_p = q_tmp, p_tmp
+
+                    # Biased trajectory sampling
+                    # - Perform a biased trajectory sampling and keep one live point. 
+                    # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
+                    E_max = max(np.max(Es_new), np.max(Es_old))
+                    # print np.max(Es_new),  np.max(Es_old)
+                    r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
+                    A= min(1, r)
+                    # print E_max
+                    # print r
+                    # print live_point_q_old
+                    # print live_point_q_new
+                    # assert False
+                    u = np.random.random() # Draw random uniform [0, 1]                
+                    if u < A:
+                        live_point_q_old = np.copy(live_point_q_new)
+                    q_tmp = live_point_q_old                    
+                    Es_old = np.concatenate((Es_old, Es_new))
+                    Es_new = None
+
+                    # Next doubling length 2**d
+                    d +=1
+
+                    # Check for termination condition
+                    Dq = right_q - left_q
+                    right_terminate = np.dot(Dq, right_p) < 0
+                    left_terminate = np.dot(-Dq, left_p) < 0
+
+                # assert False
+
+                # # Compute final energy and save.
+                # E_final = self.E(q_tmp, p_tmp)
+                
+                # # Save Kinetic energy
+                # if i >= self.warm_up_num: # Save the right cadence of samples.
+                #     self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
+                #     self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
+                    
+                # if (save_chain) and (m==0):
+                #     self.decision_chain[i, 0] = 1
+                if i >= self.warm_up_num: # Save the right cadence of samples.
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
+                    accept_counter +=1
+                    total_length += 2**(d+1)
+                else:
+                    accept_counter_warm_up += 1                        
+
+
+            
+            dt = time.time() - start
+            print "Time taken: %.2f\n" % dt 
+
+        print "Compute acceptance rate"
+        self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
+        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
+        print "During warm up: %.3f" % self.accept_R_warm_up
+        print "After warm up: %.3f" % self.accept_R
+        print "Average length: %.3f" % (total_length / float(self.Nchain * self.warm_up_num))
         print "Complete"            
 
         return         
