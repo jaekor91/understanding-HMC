@@ -1,5 +1,6 @@
 from utils import *
 
+
 class sampler(object):
     """
     Parent class to MH_sampler and HMC_sampler. Contains common functions such as the plot function.
@@ -660,7 +661,121 @@ class HMC_sampler(sampler):
 
         return 
 
+    def gen_sample_static1(self, q_start, save_chain, verbose):
+        """
+        - Static implementation -- Efficient, doubling sampling appraoch: 
+        Start with an initial point. Integrate forward or backward, and 
+        therefore doubling the trajectory length. Do the Benouli sampling 
+        of the trajectory. Next, integrate backward or forward by *2^L_current* 
+        (so initially this is 2). While doing this, perform uniform progressive sampling. 
+        That is the first new point is the live point of the new trajectory. 
+        The live point gets updated as the uniform progressive sampling approach described above. 
+        While updates are being made be sure to save sum_z pi(z) for the new trajectory. 
+        Perform Bernouli sampling of the trajectory.
+
+        - Static implementation -- Efficient, biased sampling approach: 
+        Let's assume we are using this in combination with the trajectory 
+        doubling scheme mentioned above. Every time with compute a new trajectory 
+        (and pick a live point based on uniform progress sampling), we then next 
+        perform a Bernouli sampling with min(1, w_new//w_old) for the new trajectory. 
+        If w_new = w_old, as in the case of doubling trajectory scheme with exact 
+        energy computation, then we always pick points that are futher away from 
+        the initial point. If trajectory becomes worse, then the bias becomes less prominent.
+
+        - save_chain (currently not supported): If True, in addition to saving all warmed-up and thinned samples,
+        save in an array the following (only the first chain):
+        1) phi_q (Niter, L, D): The full trajectory starting with the initial.
+        2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
+        """
     
+        # Check if the correct number of starting points have been        
+        assert q_start.shape[0] == self.Nchain
+    
+        if (save_chain):
+            assert False
+            self.decision_chain = np.zeros((self.Niter, 1), dtype=np.int)
+            self.phi_q = np.zeros((self.Niter, self.L+1, self.D), dtype=np.float)
+            # +1 because we want to count the initial AND final.
+            
+        # Variables for computing acceptance rate
+        accept_counter_warm_up = 0
+        accept_counter = 0
+        
+        # Executing HMC
+        for m in xrange(self.Nchain): # For each chain
+            start = time.time()   
+            
+            # Initializing the chain
+            if verbose:
+                print "Running chain %d" % m                
+            
+            # Take the initial value: We treat the first point to be accepted without movement.
+            self.q_chain[m, 0, :] = q_start[m]
+            q_initial = q_start[m]
+            p_tmp = self.p_sample()[0] # Sample momentun
+            self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
+            self.Eq_chain[m, 0, 0] = self.K(p_tmp)
+            # Save the initial point of the trajectory if asked for.
+            if save_chain and (m==0):
+                self.phi_q[0, 0, :] = q_initial            
+
+            for i in xrange(self.Niter): # For each step
+                # Initial position/momenutm
+                q_tmp = q_initial
+                p_tmp = self.p_sample()[0] # Sample momentun
+
+                # Compute kinetic initial energy and save
+                K_initial = self.K(p_tmp)
+                
+                # Compute the initial Energy
+                E_initial = self.E(q_tmp, p_tmp)
+                
+                # Save the initial point of the trajectory if asked for.
+                if save_chain and (m==0):
+                    self.phi_q[i, 0, :] = q_initial
+                    
+                # Perform HMC integration and save the trajectory if requested.
+                for l in xrange(1, self.L+1):
+                    p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
+                    if save_chain and (m == 0):
+                        self.phi_q[i, l, :] = q_tmp
+
+                # Compute final energy and save.
+                E_final = self.E(q_tmp, p_tmp)
+                
+                # Save Kinetic energy
+                if i >= self.warm_up_num: # Save the right cadence of samples.
+                    self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
+                    self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
+                    
+                # With correct probability, accept or reject the last proposal.
+                dE = E_final - E_initial
+                lnu = np.log(np.random.random(1))        
+                if (dE < 0) or (lnu < -dE): # If accepted.
+                    q_initial = q_tmp
+                    if (save_chain) and (m==0):
+                        self.decision_chain[i, 0] = 1
+                    if i >= self.warm_up_num: # Save the right cadence of samples.
+                        self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
+                        accept_counter +=1                            
+                    else:
+                        accept_counter_warm_up += 1                        
+                else: # Otherwise proposal rejected.
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial
+            
+            dt = time.time() - start
+            print "Time taken: %.2f\n" % dt 
+
+        print "Compute acceptance rate"
+        self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
+        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
+        print "During warm up: %.3f" % self.accept_R_warm_up
+        print "After warm up: %.3f" % self.accept_R
+        print "Complete"            
+
+        return         
+
+
     def K(self, p):
         """
         The user supplies potential energy and its gradient.
