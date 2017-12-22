@@ -756,11 +756,14 @@ class HMC_sampler(sampler):
                 left_p = live_point_p_old
                 right_q = live_point_q_old
                 right_p = live_point_p_old
-                # Total pi(z)
-                pi_old = None
-                pi_new = None
+                # pi_z's
+                lnpi_z_old = -E_initial # For the old trajectory, we only need to save the total
+                Es_new = None # For the new trajectory, we save all of the energies.
 
-                # Main sampling occurs here
+                # Main sampling occurs here.
+                # First doubling d == 0 gives new sub-trajectory of length 1.
+                # Second doubling d == 1 gives new sub-trajectory of length 2. 
+                # Third, length 4, etc.
                 for d in xrange(0, self.log2L):
                     L_new_sub = 2**d # Length of new sub trajectory
                     u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
