@@ -661,7 +661,7 @@ class HMC_sampler(sampler):
 
         return 
 
-    def gen_sample_static1(self, q_start, save_chain, verbose):
+    def gen_sample_static(self, q_start, save_chain, verbose):
         """
 
         Efficient sampling approach with
@@ -719,6 +719,7 @@ class HMC_sampler(sampler):
             self.Eq_chain[m, 0, 0] = self.K(p_tmp)
             # Save the initial point of the trajectory if asked for.
             if save_chain and (m==0):
+                assert False
                 self.phi_q[0, 0, :] = q_initial            
 
             for i in xrange(self.Niter): # For each step
@@ -734,13 +735,29 @@ class HMC_sampler(sampler):
                 
                 # Save the initial point of the trajectory if asked for.
                 if save_chain and (m==0):
+                    assert False
                     self.phi_q[i, 0, :] = q_initial
                     
                 # Perform HMC integration and save the trajectory if requested.
-                for l in xrange(1, self.L+1):
-                    p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
-                    if save_chain and (m == 0):
-                        self.phi_q[i, l, :] = q_tmp
+                # Live points from the old trajectory
+                live_point_q_old = q_tmp 
+                live_point_p_old = p_tmp
+                # Live points from the new trajectory
+                live_point_q_new = None
+                live_point_p_new = None
+                # Left boundary point
+                left_q = live_point_q_old
+                left_p = live_point_p_old
+                # Right boundary point
+                right_q = None
+                right_p = None
+
+                # Main sampling occurs here
+                # for l in xrange(0, self.L):
+                #     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
+                #     if save_chain and (m == 0):
+                #         assert False
+                #         self.phi_q[i, l, :] = q_tmp
 
                 # Compute final energy and save.
                 E_final = self.E(q_tmp, p_tmp)
