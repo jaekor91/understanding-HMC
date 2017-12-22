@@ -756,8 +756,8 @@ class HMC_sampler(sampler):
                 left_p = live_point_p_old
                 right_q = live_point_q_old
                 right_p = live_point_p_old
-                # pi_z's
-                lnpi_z_old = -E_initial # For the old trajectory, we only need to save the total
+                # w = sum_z pi_z
+                Es_old = np.array([-E_initial]) # We save all the energies
                 Es_new = None # For the new trajectory, we save all of the energies.
 
                 # Main sampling occurs here.
@@ -780,15 +780,22 @@ class HMC_sampler(sampler):
                     Es_new[0] = self.E(q_tmp, p_tmp)
 
                     # Constructing the new trajectory with progressive updating.
-                    # - Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
-                    # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
-                    # Else retain the old point.                    
-                    for k in xrange(1, L_new_sub):
-                        p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
-                        Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
-                        u = np.random.random() # Draw random uniform [0, 1]
-
-
+                    # Only if the new trajectory length is greater than 1
+                    if L_new_sub > 1:
+                        # - Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
+                        # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
+                        # Else retain the old point.                    
+                        for k in xrange(1, L_new_sub):
+                            p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
+                            Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
+                            u = np.random.random() # Draw random uniform [0, 1]
+                            E_max = np.max(Es_new[:k+1])# Get the maximum energy value
+                            numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
+                            denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
+                            r = numerator/denominator# Compute the desired ratio.
+                            if u > r:
+                                # Update the live point.
+                                live_point_q_new, live_point_p_new = q_tmp, p_tmp
 
                     # Update the boundary point if last                        
                     if u_dir == 0: 
@@ -797,6 +804,11 @@ class HMC_sampler(sampler):
                         left_q, left_p = q_tmp, p_tmp
 
                     # Biased trajectory sampling
+                    # - Perform a biased trajectory sampling and keep one live point:
+                    # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
+
+                    u = np.random.random() # Draw random uniform [0, 1]
+
 
 
                 # Compute final energy and save.
