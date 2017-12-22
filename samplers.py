@@ -396,7 +396,7 @@ class HMC_sampler(sampler):
     """
     
     def __init__(self, D, V, dVdq, Nchain=2, Niter=1000, thin_rate=1, warm_up_frac=0.1, warm_up_num=None, \
-                 cov_p=None, sampler_type="Fixed", L=None, dt=None, L_low=None, L_high=None):
+                 cov_p=None, sampler_type="Fixed", L=None, dt=None, L_low=None, L_high=None, log2L=None):
         """
         Args: See Sampler class constructor for other variables.
         - V: The potential function which is the negative lnL.
@@ -415,7 +415,7 @@ class HMC_sampler(sampler):
         self.dVdq = dVdq
         
         # Which sampler to use?
-        assert (sampler_type=="Fixed") or (sampler_type=="Random") or (sampler_type=="NUTS")
+        assert (sampler_type=="Fixed") or (sampler_type=="Random") or (sampler_type=="NUTS") or (sampler_type=="Static")
         assert dt is not None
         self.dt = dt
         self.sampler_type = sampler_type
@@ -426,6 +426,9 @@ class HMC_sampler(sampler):
             assert (L_low is not None) and (L_high is not None)
             self.L_low = L_low
             self.L_high = L_high
+        elif self.sampler_type == "Static":
+            assert (log2L is not None)
+            self.log2L =log2L
 
 
         
@@ -753,7 +756,7 @@ class HMC_sampler(sampler):
                 right_p = None
 
                 # Main sampling occurs here
-                # for l in xrange(0, self.L):
+                for l in xrange(1, self.log2L):
                 #     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
                 #     if save_chain and (m == 0):
                 #         assert False
