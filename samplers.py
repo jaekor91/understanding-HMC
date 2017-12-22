@@ -406,6 +406,7 @@ class HMC_sampler(sampler):
         - L: Number of steps to be taken for each sample if sampler type is "Fixed". 
         - L_low, L_high: If "Random" sampler is chosen, then vary the trajectory length as a random sample from [L_low, L_high]. 
         - sampler_type = "Fixed", "Random", or "NUTS"
+        - log2L: log base 2 of trajectory length.
         """
         # parent constructor
         sampler.__init__(self, D=D, target_lnL=None, Nchain=Nchain, Niter=Niter, thin_rate=thin_rate, warm_up_frac=warm_up_frac, warm_up_num=warm_up_num)
@@ -464,6 +465,8 @@ class HMC_sampler(sampler):
             self.gen_sample_fixed(q_start, save_chain, verbose)
         elif (self.sampler_type == "Random"):
             self.gen_sample_random(q_start, save_chain, verbose)
+        elif (self.sampler_type == "Static"):
+            self.gen_sample_static(q_start, save_chain, verbose)
         # Other samplers come here
             
         return
