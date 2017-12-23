@@ -63,6 +63,88 @@ For this, one must use Riemanian-HMC.
 - Dynamic implementation -- General idea: Necessary to explore all energy level sets equally well. The same as static implementation except repeat the procedure until the termination condition is met. A naive scheme won't work as it violates time reversibility. The fundamental problem is that certain subjectories would pre-maturely terminate if allowed to be considered.
 
 - Dynamic implementation -- NUTS sampler: Multiplicatively expand the trajectory until the termination condition is reached at both ends. When building the new sub-trajectory check if any sub-tree statisfies the termination condition and if so, reject the expansion and stop building the tree. This will require 2^j - 1 checking of sub-tree termination, effectively doubling the dot product time. As before, perform uniform progressive sampling (multinomial) in each new trajectory with Bernouli biased sampling among new and old trajectories.
+Pathology checking: Length of new subjectory 2**d.
+d=0: 
+x 
+done! 
+
+d=1:
+x 
+x x 
+done! 
+
+d=2:
+x 
+x x 
+x o x 
+x o x x 
+
+d=3:
+x  
+x x
+x o x 
+x o x x 
+x o o o x 
+x o o o x x 
+x o o o x o x
+x o o o x o x x 
+
+m = 1 
+q0, p0 = q_tmp, p_tmp 
+ql, pl = q0, p0
+qr, pr = q0, p0
+
+
+while m <= 2**d:
+	log2m, 2**log2m, residual
+	m = 1  --> 0, 1, 0 | x    
+	m = 2  --> 1, 2, 0 | x x |
+ 	m = 3  --> 1, 2, 1 | x o | x
+	m = 4  --> 2, 4, 0 | x o | x x | 
+	m = 5  --> 2, 4, 1 | x o | o o | x 
+	m = 6  --> 2, 4, 2 | x o | o o | x x | 
+	m = 7  --> 2, 4, 3 | x o | o o | x o | x 
+	m = 8  --> 3, 8, 0 | x o | o o | x o | x x | 
+	m = 9  --> 3, 8, 1 | x o | o o | o o | o o | x 
+	m = 10 --> 3, 8, 2 | x o | o o | o o | o o | x x | 
+	m = 11 --> 3, 8, 3 | x o | o o | o o | o o | x o | x 
+	m = 12 --> 3, 8, 4 | x o | o o | o o | o o | x o | x x | 
+ 	m = 13 --> 3, 8, 5 | x o | o o | o o | o o | x o | o o | x
+	m = 14 --> 3, 8, 6 | x o | o o | o o | o o | x o | o o | x x | 
+	m = 15 --> 3, 8, 7 | x o | o o | o o | o o | x o | o o | x o | x
+	m = 16 --> 4, 8, 0 | x o | o o | o o | o o | x o | o o | x o | x x
+
+	m+=1 # Proceed to the next step
+
+For each m,
+	# Decide whether to save the point for future comparison.
+	save_point, save_index = save(m)
+	if save_point:
+		q_save[save_index, :] = q_tmp # Current point
+		p_save[save_index, :] = p_tmp 
+
+	# Check termination conditions against each point.
+	check_pts = check_points(m)
+	for l in check_pts:
+		_, save_index = save(l)
+		q_check = q_save[save_index, :] # Retrieve a previous point
+		p_check = p_save[save_index, :] # Retrieve a previous point
+		left_terminate, right_terminate = check_termination(q_check, p_check, q_tmp, p_tmp)
+		if left_terminate and right_terminate:
+			# If the termination condition is satisfied by any subtree
+			# reject the whole trajector expansion.
+			break
+			break
+		if l > 1: # Do we need to keep the point l?
+			if release(m, l):
+				q_save[save_index, :] = free...
+		
+
+
+
+
+
+
 
 
 
