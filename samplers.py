@@ -940,7 +940,7 @@ class HMC_sampler(sampler):
                 left_terminate = False
                 right_terminate = False
 
-                if first:
+                if first and m==0:
                     self.single_traj = [q_tmp]
                     self.single_traj_live = [live_point_q_old]
                 d = 0
@@ -962,7 +962,7 @@ class HMC_sampler(sampler):
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     Es_new[0] = self.E(q_tmp, p_tmp)
 
-                    if first:
+                    if first and m==0:
                         self.single_traj.append(q_tmp)
                         self.single_traj_live.append(live_point_q_new)
                     # Constructing the new trajectory with progressive updating.
@@ -982,7 +982,7 @@ class HMC_sampler(sampler):
                             if u > r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
-                            if first:
+                            if first and m==0:
                                 self.single_traj.append(q_tmp)
                                 self.single_traj_live.append(live_point_q_new)
 
@@ -1035,7 +1035,9 @@ class HMC_sampler(sampler):
                     accept_counter +=1
                     total_length += 2**(d+1)
                 else:
-                    accept_counter_warm_up += 1                        
+                    accept_counter_warm_up += 1
+
+                first = False
 
 
             
