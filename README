@@ -1,0 +1,92 @@
+utils.py 
+
+/---- Target distributions
+All toy target distribution studied are multi-variate normals (D>=2) specified by mean mu0
+and covariance cov0.
+
+
+/----- Number of sample and convergence:
+In general, we want to take independent samples (after warm-up phase) from a distribution.
+The set of samples characterize the posterior distribution.
+The more complicated a posterior distribution, the greater the number of samples are required
+for a good characteriztaion of the distribution. Imagine a shallow moon shaped distribution, 
+the sharper the curvature, the more samples we would need to fully characterize the distribution.
+
+Nonetheless, in many cases, we can make a normal approximation to the full posterior. 
+In such case, for each quantity being inferred we want to know the mean and covariance matrix
+of the posterior. Some observations:
+- Covariance does not seem to affect the variance of the estimate of the mean.
+- Nsample improves the mean estimate only by 1/sqrt(Nsample)
+- Larger intrinsic variance gives noisier estimates of the mean as expected.
+
+/----- "Pathological" cases:
+Regions of extreme curvature will be missed by HMC no matter how small one makes each time step.
+For this, one must use Riemanian-HMC.
+
+/----- Degeneracy:
+
+
+/----- Cases to be studied:
+- "Typical" object
+- Very bright object
+- Very dim object
+- One bright, one faint
+- Two birght
+- Etc.
+
+
+
+/---- List of tasks
+- Basis cases
+- Processing speed requiremetns
+- Number of sample problem 
+- Understanding which machine to use
+- Degeneracy or non-identifiability
+	- One dimensional case with two true objects.
+- Other PCAT problems here
+- Model bias due to PSF mis-specification
+- Bias in quantities measured
+
+
+
+
+
+/---- Optimal sampling from micro-canonical distribution
+- Static implementation -- Inefficient approach: Generate a random trajectory, L_b backward and L_f forward integrated such that L = L_b + L_f. Save each point in the trajectory and its pi(z) = e^-H(z). Sample from the multinomial distribution given by pi(z)/sum_z' pi(z').
+
+- Static implementation -- Efficient, uniform progressive sampling approach: Start with the initial point. Integrate forward or backward (flip a coin). Compute pi(z) for both and save sum_z pi(z). Use Bernouli sampling to get the live point. Integrate forward or backward. Do Bernouli sampling of the trajectory by comparing the previous sum_z pi(z) to pi(z_new). If the old trajectory is chosen then retain the old point. Otherwise, retain the new point. Repeat until the desired trajectory lenght is reached.
+
+- Static implementation -- Efficient, doubling sampling appraoch: Start with an initial point. Integrate forward or backward, and therefore doubling the trajectory length. Do the Benouli sampling of the trajectory. Next, integrate backward or forward by *2^L_current* (so initially this is 2). While doing this, perform uniform progressive sampling. That is the first new point is the live point of the new trajectory. The live point gets updated as the uniform progressive sampling approach described above. While updates are being made be sure to save sum_z pi(z) for the new trajectory. Perform Bernouli sampling of the trajectory.
+
+- Static implementation -- Efficient, biased sampling approach: Let's assume we are using this in combination with the trajectory doubling scheme mentioned above. Every time with compute a new trajectory (and pick a live point based on uniform progress sampling), we then next perform a Bernouli sampling with min(1, w_new//w_old) for the new trajectory. If w_new = w_old, as in the case of doubling trajectory scheme with exact energy computation, then we always pick points that are futher away from the initial point. If trajectory becomes worse, then the bias becomes less prominent.
+
+- Dynamic implementation -- General idea: Necessary to explore all energy level sets equally well. The same as static implementation except repeat the procedure until the termination condition is met. A naive scheme won't work as it violates time reversibility. The fundamental problem is that certain subjectories would pre-maturely terminate if allowed to be considered.
+
+- Dynamic implementation -- NUTS sampler: Multiplicatively expand the trajectory until the termination condition is reached at both ends. When building the new sub-trajectory check if any sub-tree statisfies the termination condition and if so, reject the expansion and stop building the tree. This will require 2^j - 1 checking of sub-tree termination, effectively doubling the dot product time. As before, perform uniform progressive sampling (multinomial) in each new trajectory with Bernouli biased sampling among new and old trajectories.
+
+
+
+
+
+
+/---- Short term
+
+MHMC
+- If the variables are unccorelated and have unit variance, then MH is effective at doing high dimensional inference.
+
+- Intuition about why HMC is expected to work better.
+- Trajectory with different parameters. 2D gaussian examples.
+	- Different integration time
+	- Different momentum distribution 
+ 
+- Show simple cases in 1D and 2D. MC vs. HMC.
+	- Convergence plot (show for a Gaussian case how it works!) Which one is faster? Real time.
+	- Even though the trajectory spend less time more trajectories pass the mode 
+	- Can choose any distribuon, but nice to choose something in the right direction 
+ 	- Difficult target distribution 
+
+
+ 
+ 
+ 
+
