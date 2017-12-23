@@ -116,33 +116,72 @@ while m <= 2**d:
 
 	m+=1 # Proceed to the next step
 
-For each m,
+# Arrays in which to save intermediate points
+q_save = np.zeros((d, d_max+1), dtype=float)
+p_save = np.zeros((d, d_max+1), dtype=float)
+
+# Index table
+# Initially all -1. If not -1, then holds the point number m. The corresponding
+# array index is the save index. This scheme requires manual release.
+save_index_table = np.ones(d_max+1, dtype=int) * -1
+
+def find_next(table):
+	"""
+	Given the save index table, return the first empty slot.
+	"""
+	for i, e in enumerate(table):
+		if e == -1:
+			return i
+
+def retrieve_save_index(table, l):
+	"""
+	Given the save index table and the point number,
+	return the save indexe corresponding to the point.s
+	"""
+	for i, m in enumerae(table):
+		if m == l:
+			return i
+
+def release(m, l):
+	"""
+	Given the current point m and that the termination condition was
+	checked against l, return True if the point should no longer be saved.
+	Return False, otherwise.
+	"""
+	....
+
+trajectory_reject = Falses
+
+For m in range(1, 2**d_1):
 	# Decide whether to save the point for future comparison.
-	save_point, save_index = save(m)
-	if save_point:
+	if (m % 2) == 1: # Only odd numbered points are saved.
+		save_index = find_next(save_index_table)
 		q_save[save_index, :] = q_tmp # Current point
 		p_save[save_index, :] = p_tmp 
+		save_index_table[save_index] = m
 
 	# Check termination conditions against each point.
 	check_pts = check_points(m)
 	for l in check_pts:
-		_, save_index = save(l)
-		q_check = q_save[save_index, :] # Retrieve a previous point
-		p_check = p_save[save_index, :] # Retrieve a previous point
+		# Retrieve a previous point	
+		save_index = retrieve_save_index(save_index_table, l)
+		q_check = q_save[save_index, :] 
+		p_check = p_save[save_index, :] 
+
+		# Check termination condition
 		left_terminate, right_terminate = check_termination(q_check, p_check, q_tmp, p_tmp)
 		if left_terminate and right_terminate:
 			# If the termination condition is satisfied by any subtree
 			# reject the whole trajector expansion.
-			break
-			break
-		if l > 1: # Do we need to keep the point l?
-			if release(m, l):
-				q_save[save_index, :] = free...
-		
+			trajectory_reject = True
+			break 
 
+		# If the point is no longer needed, then release the space.		
+		if release(m, l):
+			save_index_table[save_index] = -1
 
-
-
+if trajectory_reject:
+	break
 
 
 
