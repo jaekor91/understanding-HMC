@@ -862,8 +862,9 @@ class HMC_sampler(sampler):
 
     def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True):
         """
-        The same as _static except trajectory length is determined by the termination condition
+        The same as *_static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
+        That is, stop expansion process if any sub-tree of the new sub-trajectory meets the termination criteria. 
 
         - save_chain (currently not supported): If True, in addition to saving all warmed-up and thinned samples,
         save in an array the following (only the first chain):
