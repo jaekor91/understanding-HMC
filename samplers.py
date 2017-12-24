@@ -949,7 +949,7 @@ class HMC_sampler(sampler):
                     self.single_traj = [q_tmp]
                     self.single_traj_live = [live_point_q_old]
                 d = 0
-                while (~left_terminate) and (~right_terminate):
+                while (~left_terminate) or (~right_terminate):
                     if d > self.d_max-1:
                         print "d must be samller than d_max = %d" % self.d_max
                         assert False
@@ -994,7 +994,7 @@ class HMC_sampler(sampler):
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
 
                             # Check the termination criteria so far
-                            if (k+1 % 2) == 1: # If odd point, then save.
+                            if ((k+1) % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
                                 q_save[save_index, :] = q_tmp # Current point
                                 p_save[save_index, :] = p_tmp 
@@ -1015,12 +1015,13 @@ class HMC_sampler(sampler):
                                         left_q, left_p = q_tmp, p_tmp
                                         right_q, right_p = q_check, p_check
                                     Dq = right_q - left_q
+                                 
                                     right_terminate_tmp = np.dot(Dq, right_p) < 0
                                     left_terminate_tmp = np.dot(Dq, left_p) > 0
 
                                     if left_terminate_tmp and right_terminate_tmp:
                                         # If the termination condition is satisfied by any subtree
-                                        # reject the whole trajector expansion.
+                                        # reject the whole trajectory expansion.
                                         trajectory_reject = True
                                         break 
 
@@ -1037,7 +1038,7 @@ class HMC_sampler(sampler):
                             numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
                             denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
                             r = numerator/denominator# Compute the desired ratio.
-                            
+
                             if u > r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
