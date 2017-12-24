@@ -945,7 +945,7 @@ class HMC_sampler(sampler):
                 left_terminate = False
                 right_terminate = False
 
-                if first and m==0:
+                if first and m==0 and i==0:
                     self.single_traj = [q_tmp]
                     self.single_traj_live = [live_point_q_old]
                 d = 0
@@ -980,7 +980,7 @@ class HMC_sampler(sampler):
                     save_index_table[save_index] = 1 # Note 1-indexing convention.
                     trajectory_reject = False # For rejecting the whole trajectory                    
 
-                    if first and m==0:
+                    if first and m==0 and i==0:
                         self.single_traj.append(q_tmp)
                         self.single_traj_live.append(live_point_q_new)
 
@@ -1035,11 +1035,14 @@ class HMC_sampler(sampler):
                                         break 
 
                                     # If the point is no longer needed, then release the space.     
-                                    if (k+1 > 1) and (l>1) and release(k+1, l):
+                                    if (l>1) and release(k+1, l):
                                         save_index_table[save_index] = -1                                
 
                                 if trajectory_reject:
                                     break
+
+                            if trajectory_reject:
+                                break
 
                             Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
                             u = np.random.random() # Draw random uniform [0, 1]
@@ -1052,7 +1055,7 @@ class HMC_sampler(sampler):
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
 
-                            if first and m==0:
+                            if first and m==0 and i==0:
                                 self.single_traj.append(q_tmp)
                                 self.single_traj_live.append(live_point_q_new)
 
