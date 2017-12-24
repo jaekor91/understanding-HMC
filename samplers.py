@@ -992,22 +992,14 @@ class HMC_sampler(sampler):
                         # Else retain the old point.                    
                         for k in xrange(1, L_new_sub):
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
-                            Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
-                            u = np.random.random() # Draw random uniform [0, 1]
-                            E_max = np.max(Es_new[:k+1])# Get the maximum energy value
-                            numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
-                            denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
-                            r = numerator/denominator# Compute the desired ratio.
-                            if u > r:
-                                # Update the live point.
-                                live_point_q_new, live_point_p_new = q_tmp, p_tmp
+
                             # Check the termination criteria so far
-                            if (k % 2) == 1: # If odd point, then save.
+                            if (k+1 % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
                                 q_save[save_index, :] = q_tmp # Current point
                                 p_save[save_index, :] = p_tmp 
                                 save_index_table[save_index] = k+1
-                            else: # If even,
+                            else: 
                                 # Check termination conditions against each point.
                                 check_pts = check_points(k+1)
                                 for l in check_pts:
@@ -1025,7 +1017,7 @@ class HMC_sampler(sampler):
                                     Dq = right_q - left_q
                                     right_terminate_tmp = np.dot(Dq, right_p) < 0
                                     left_terminate_tmp = np.dot(Dq, left_p) > 0
-                                    
+
                                     if left_terminate_tmp and right_terminate_tmp:
                                         # If the termination condition is satisfied by any subtree
                                         # reject the whole trajector expansion.
@@ -1033,11 +1025,22 @@ class HMC_sampler(sampler):
                                         break 
 
                                     # If the point is no longer needed, then release the space.     
-                                    if (k+1 > 1) and release(k+1, l):
+                                    if (k+1 > 1) and (l>1) and release(k+1, l):
                                         save_index_table[save_index] = -1                                
 
                                 if trajectory_reject:
                                     break
+
+                            Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
+                            u = np.random.random() # Draw random uniform [0, 1]
+                            E_max = np.max(Es_new[:k+1])# Get the maximum energy value
+                            numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
+                            denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
+                            r = numerator/denominator# Compute the desired ratio.
+                            
+                            if u > r:
+                                # Update the live point.
+                                live_point_q_new, live_point_p_new = q_tmp, p_tmp
 
                             if first and m==0:
                                 self.single_traj.append(q_tmp)
