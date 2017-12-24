@@ -192,10 +192,24 @@ def check_points(m):
     assert (m % 2) ==0
     r = int(m)
     # As long as r is not a power of two, keep subtracting the last possible power of two.
-    d_last = np.floor(np.log2(r))    
+    d_last = np.floor(np.log2(r))
+    
+#     #---- Debug lines
+#     counter = 0
+#     print counter
+#     print "r", r
+#     print "d_last", d_last
+#     print "\n"
     while ~power_of_two(r) and r>2:
+        d_last = np.floor(np.log2(r))
         r -= int(2**d_last)
         d_last -=1
+#         #---- Debug lines
+#         counter +=1
+#         print counter
+#         print "r", r
+#         print "d_last", d_last
+#         print "\n"
         
     pow_tmp = np.log2(r)
     start = m-r+1
@@ -208,6 +222,7 @@ def check_points(m):
         pts.append(tmp)
     
     return np.asarray(pts)
+
 
 def release(m, l):
     """
