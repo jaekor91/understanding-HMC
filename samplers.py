@@ -886,6 +886,10 @@ class HMC_sampler(sampler):
         accept_counter_warm_up = 0
         accept_counter = 0
         total_length = 0 # Used to compute the total amount of computation
+
+        # Arrays in which to save intermediate points
+        q_save = np.zeros((self.d_max+1, self.D), dtype=float)
+        p_save = np.zeros((self.d_max+1, self.D), dtype=float)
         
         # Executing HMC
         for m in xrange(self.Nchain): # For each chain
@@ -949,6 +953,12 @@ class HMC_sampler(sampler):
                     if d > self.d_max-1:
                         print "d must be samller than d_max = %d" % self.d_max
                         assert False
+
+                    # Index table
+                    # Initially all -1. If not -1, then holds the point number m. The corresponding
+                    # array index is the save index. This scheme requires manual release.
+                    save_index_table = np.ones(self.d_max+1, dtype=int) * -1
+
                     L_new_sub = 2**d # Length of new sub trajectory
                     u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
 
@@ -963,9 +973,17 @@ class HMC_sampler(sampler):
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     Es_new[0] = self.E(q_tmp, p_tmp)
 
+                    # Saving the initial point
+                    save_index = find_next(save_index_table)
+                    q_save[save_index, :] = q_tmp
+                    p_save[save_index, :] = p_tmp
+                    save_index_table[save_index] = 1 # Note 1-indexing convention.
+                    trajectory_reject = False # For rejecting the whole trajectory                    
+
                     if first and m==0:
                         self.single_traj.append(q_tmp)
                         self.single_traj_live.append(live_point_q_new)
+
                     # Constructing the new trajectory with progressive updating.
                     # Only if the new trajectory length is greater than 1
                     if L_new_sub > 1:
@@ -983,9 +1001,50 @@ class HMC_sampler(sampler):
                             if u > r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
+                            # Check the termination criteria so far
+                            if (k % 2) == 1: # If odd point, then save.
+                                save_index = find_next(save_index_table)
+                                q_save[save_index, :] = q_tmp # Current point
+                                p_save[save_index, :] = p_tmp 
+                                save_index_table[save_index] = k+1
+                            else: # If even,
+                                # Check termination conditions against each point.
+                                check_pts = check_points(k+1)
+                                for l in check_pts:
+                                    # Retrieve a previous points
+                                    save_index = retrieve_save_index(save_index_table, l)
+                                    q_check = q_save[save_index, :] 
+                                    p_check = p_save[save_index, :] 
+                                    # Check termination condition
+                                    if u_dir == 0: # Forward
+                                        left_q, left_p = q_check, p_check
+                                        right_q, right_p = q_tmp, p_tmp
+                                    else:                                        
+                                        left_q, left_p = q_tmp, p_tmp
+                                        right_q, right_p = q_check, p_check
+                                    Dq = right_q - left_q
+                                    right_terminate_tmp = np.dot(Dq, right_p) < 0
+                                    left_terminate_tmp = np.dot(Dq, left_p) > 0
+                                    
+                                    if left_terminate_tmp and right_terminate_tmp:
+                                        # If the termination condition is satisfied by any subtree
+                                        # reject the whole trajector expansion.
+                                        trajectory_reject = True
+                                        break 
+
+                                    # If the point is no longer needed, then release the space.     
+                                    if (k+1 > 1) and release(k+1, l):
+                                        save_index_table[save_index] = -1                                
+
+                                if trajectory_reject:
+                                    break
+
                             if first and m==0:
                                 self.single_traj.append(q_tmp)
                                 self.single_traj_live.append(live_point_q_new)
+
+                    if trajectory_reject: # If the last expansion is rejected then stop NUTS
+                        break
 
                     # Update the boundary point if last                        
                     if u_dir == 0: 
@@ -1000,11 +1059,6 @@ class HMC_sampler(sampler):
                     # print np.max(Es_new),  np.max(Es_old)
                     r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
                     A= min(1, r)
-                    # print E_max
-                    # print r
-                    # print live_point_q_old
-                    # print live_point_q_new
-                    # assert False
                     u = np.random.random() # Draw random uniform [0, 1]                
                     if u < A:
                         live_point_q_old = np.copy(live_point_q_new)
