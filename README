@@ -104,6 +104,7 @@ m = 5   -->   x o | o o | x
 m = 6   -->   x o | o o | x x | 
 m = 7   -->   x o | o o | x o | x 
 m = 8   -->   x o | o o | x o | x x | 
+
 m = 9   -->   x o | o o | o o | o o | x 
 m = 10  -->   x o | o o | o o | o o | x x | 
 m = 11  -->   x o | o o | o o | o o | x o | x 
