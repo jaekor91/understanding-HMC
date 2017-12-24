@@ -867,6 +867,10 @@ class HMC_sampler(sampler):
         2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
         - first: If true, save the first chain trajectory.
         - first_idx_last: Number of trajectories to save for the first chain.
+
+        Note: Which point shoudl be saved can be confusing so I make a note for myself.
+        - If the trajectory terminates because the global trajecotry meets the criteria
+        then the last live_point_q_new is saved.
         """
     
         # Check if the correct number of starting points have been        
@@ -1035,6 +1039,7 @@ class HMC_sampler(sampler):
                                         # If the termination condition is satisfied by any subtree
                                         # reject the whole trajectory expansion.
                                         trajectory_reject = True
+                                        q_tmp = live_point_q_old
                                         break 
 
                                     # If the point is no longer needed, then release the space.     
@@ -1071,7 +1076,7 @@ class HMC_sampler(sampler):
                     else: # Integrate backward
                         left_q, left_p = q_tmp, p_tmp
 
-                    # Biased trajectory sampling
+                    # Biased trajectory sampling    
                     # - Perform a biased trajectory sampling and keep one live point. 
                     # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
                     E_max = max(np.max(Es_new), np.max(Es_old))
