@@ -996,7 +996,8 @@ class HMC_sampler(sampler):
                             # Check the termination criteria so far
                             if ((k+1) % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
-                                print "save", k+1, save_index
+                                # ---- Debug line
+                                # print "save", k+1, save_index
                                 assert save_index >= 0                                 
                                 q_save[save_index, :] = q_tmp # Current point
                                 p_save[save_index, :] = p_tmp 
@@ -1008,7 +1009,8 @@ class HMC_sampler(sampler):
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)
 
-                                    print "check", k+1, l, save_index
+                                    # ---- Debug line
+                                    # print "check", k+1, l, save_index
                                     assert save_index >= 0                                 
 
                                     q_check = q_save[save_index, :] 
