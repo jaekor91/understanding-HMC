@@ -817,11 +817,6 @@ class HMC_sampler(sampler):
                 # print np.max(Es_new),  np.max(Es_old)
                 r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
                 A= min(1, r)
-                # print E_max
-                # print r
-                # print live_point_q_old
-                # print live_point_q_new
-                # assert False
                 u = np.random.random() # Draw random uniform [0, 1]                
                 if u < A:
                     live_point_q_old = np.copy(live_point_q_new)
@@ -860,7 +855,7 @@ class HMC_sampler(sampler):
         return         
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True, first_idx_last = 5):
+    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=False, first_idx_last = 5):
         """
         The same as *_static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
@@ -912,7 +907,8 @@ class HMC_sampler(sampler):
 
             if first and (m==0):
                 self.trajectories = []
-                self.trajectories_live = []                
+                self.trajectories_live = []    
+
             for i in xrange(self.Niter): # For each step
                 # Momentum resampling
                 p_tmp = self.p_sample()[0] # Sample momentun
@@ -1080,7 +1076,7 @@ class HMC_sampler(sampler):
                     E_max = max(np.max(Es_new), np.max(Es_old))
                     # print np.max(Es_new),  np.max(Es_old)
                     r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
-                    A= min(1, r)
+                    A = min(1, r)
                     u = np.random.random() # Draw random uniform [0, 1]                
                     if u < A:
                         live_point_q_old = np.copy(live_point_q_new)
