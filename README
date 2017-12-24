@@ -96,92 +96,78 @@ qr, pr = q0, p0
 
 
 while m <= 2**d:
-	log2m, 2**log2m, residual
-	m = 1  --> 0, 1, 0 | x    
-	m = 2  --> 1, 2, 0 | x x |
- 	m = 3  --> 1, 2, 1 | x o | x
-	m = 4  --> 2, 4, 0 | x o | x x | 
-	m = 5  --> 2, 4, 1 | x o | o o | x 
-	m = 6  --> 2, 4, 2 | x o | o o | x x | 
-	m = 7  --> 2, 4, 3 | x o | o o | x o | x 
-	m = 8  --> 3, 8, 0 | x o | o o | x o | x x | 
-	m = 9  --> 3, 8, 1 | x o | o o | o o | o o | x 
-	m = 10 --> 3, 8, 2 | x o | o o | o o | o o | x x | 
-	m = 11 --> 3, 8, 3 | x o | o o | o o | o o | x o | x 
-	m = 12 --> 3, 8, 4 | x o | o o | o o | o o | x o | x x | 
- 	m = 13 --> 3, 8, 5 | x o | o o | o o | o o | x o | o o | x
-	m = 14 --> 3, 8, 6 | x o | o o | o o | o o | x o | o o | x x | 
-	m = 15 --> 3, 8, 7 | x o | o o | o o | o o | x o | o o | x o | x
-	m = 16 --> 4, 8, 0 | x o | o o | o o | o o | x o | o o | x o | x x
+m = 1   -->   x    
+m = 2   -->   x x |
+m = 3   -->   x o | x
+m = 4   -->   x o | x x | 
+m = 5   -->   x o | o o | x 
+m = 6   -->   x o | o o | x x | 
+m = 7   -->   x o | o o | x o | x 
+m = 8   -->   x o | o o | x o | x x | 
+m = 9   -->   x o | o o | o o | o o | x 
+m = 10  -->   x o | o o | o o | o o | x x | 
+m = 11  -->   x o | o o | o o | o o | x o | x 
+m = 12  -->   x o | o o | o o | o o | x o | x x | 
+m = 13  -->   x o | o o | o o | o o | x o | o o | x
+m = 14  -->   x o | o o | o o | o o | x o | o o | x x | 
+m = 15  -->   x o | o o | o o | o o | x o | o o | x o | x
+m = 16  -->   x o | o o | o o | o o | x o | o o | x o | x x |
 
-	m+=1 # Proceed to the next step
+m = 17  -->   x o | o o | o o | o o | o o | o o | o o | o o | x    
+m = 18  -->   x o | o o | o o | o o | o o | o o | o o | o o | x x |
+m = 19  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | x
+m = 20  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | x x | 
+m = 21  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | x 
+m = 22  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | x x | 
+m = 23  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | x o | x 
+m = 24  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | x o | x x | 
+m = 25  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x 
+m = 26  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x x | 
+m = 27  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | x 
+m = 28  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | x x | 
+m = 29  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | o o | x
+m = 30  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | o o | x x | 
+m = 31  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | o o | x o | x
+m = 32  -->   x o | o o | o o | o o | o o | o o | o o | o o | x o | o o | o o | o o | x o | o o | x o | x x
 
-# Arrays in which to save intermediate points
-q_save = np.zeros((d, d_max+1), dtype=float)
-p_save = np.zeros((d, d_max+1), dtype=float)
 
-# Index table
-# Initially all -1. If not -1, then holds the point number m. The corresponding
-# array index is the save index. This scheme requires manual release.
-save_index_table = np.ones(d_max+1, dtype=int) * -1
+m+=1 # Proceed to the next step
 
-def find_next(table):
-	"""
-	Given the save index table, return the first empty slot.
-	"""
-	for i, e in enumerate(table):
-		if e == -1:
-			return i
+Check points -- examples
+m=2 --> 1 
+m=4 --> 1, 3 
+m=6 --> 5 
+m=8 --> 1, 5, 7
+m=10 --> 9 
+m=12 --> 9, 11
+m=14 --> 13
+m=16 --> 1, 9, 13, 15
+m=18 --> 17
+m=20 --> 17, 19
+m=22 --> 21
+m=24 --> 17, 21, 23
+m=26 --> 25
+m=28 --> 25, 27
+m=30 --> 29
 
-def retrieve_save_index(table, l):
-	"""
-	Given the save index table and the point number,
-	return the save indexe corresponding to the point.s
-	"""
-	for i, m in enumerae(table):
-		if m == l:
-			return i
+Release -- examples
+m, l = 4, 3
+m, l = 8, (5, 7) --> 4, (1, 3)
+m, l = 12, 11 --> 4, 3
+m, l = 20, 19 --> 4, 3
+m, l = 24, (21, 23) --> 8, (5, 7) --> 4, (1, 3)
+m, l = 28, 27 --> 12, 11 --> 4, 3
 
-def release(m, l):
-	"""
-	Given the current point m and that the termination condition was
-	checked against l, return True if the point should no longer be saved.
-	Return False, otherwise.
-	"""
-	....
+m, l = 10, 9 --> 2, 1 x
+m, l = 14, 13 --> 6, 5 --> 2, 1 x
 
-trajectory_reject = Falses
+Rules
+- m is power of 2, then release is all odd points between (1, m)
+- m is not power of 2, then while (d_last > 1) and (m>4)
+continue reducing (m, l) with 2**d_last and d_last -=1.
+If m==4, then answer = True.
 
-For m in range(1, 2**d_1):
-	# Decide whether to save the point for future comparison.
-	if (m % 2) == 1: # Only odd numbered points are saved.
-		save_index = find_next(save_index_table)
-		q_save[save_index, :] = q_tmp # Current point
-		p_save[save_index, :] = p_tmp 
-		save_index_table[save_index] = m
 
-	# Check termination conditions against each point.
-	check_pts = check_points(m)
-	for l in check_pts:
-		# Retrieve a previous point	
-		save_index = retrieve_save_index(save_index_table, l)
-		q_check = q_save[save_index, :] 
-		p_check = p_save[save_index, :] 
-
-		# Check termination condition
-		left_terminate, right_terminate = check_termination(q_check, p_check, q_tmp, p_tmp)
-		if left_terminate and right_terminate:
-			# If the termination condition is satisfied by any subtree
-			# reject the whole trajector expansion.
-			trajectory_reject = True
-			break 
-
-		# If the point is no longer needed, then release the space.		
-		if release(m, l):
-			save_index_table[save_index] = -1
-
-if trajectory_reject:
-	break
 
 
 
