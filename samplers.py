@@ -996,56 +996,56 @@ class HMC_sampler(sampler):
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
                             step_counter += 1
 
-                            # # Check the termination criteria so far
-                            # if ((k+1) % 2) == 1: # If odd point, then save.
-                            #     save_index = find_next(save_index_table)
-                            #     # ---- Debug line
-                            #     # print "save", k+1, save_index
-                            #     assert save_index >= 0                                 
-                            #     q_save[save_index, :] = q_tmp # Current point
-                            #     p_save[save_index, :] = p_tmp 
-                            #     save_index_table[save_index] = k+1
-                            # else: 
-                            #     # Check termination conditions against each point.
-                            #     check_pts = check_points(k+1)
-                            #     for l in check_pts:
-                            #         # Retrieve a previous points
-                            #         save_index = retrieve_save_index(save_index_table, l)
+                            # Check the termination criteria so far
+                            if ((k+1) % 2) == 1: # If odd point, then save.
+                                save_index = find_next(save_index_table)
+                                # ---- Debug line
+                                # print "save", k+1, save_index
+                                assert save_index >= 0                                 
+                                q_save[save_index, :] = q_tmp # Current point
+                                p_save[save_index, :] = p_tmp 
+                                save_index_table[save_index] = k+1
+                            else: 
+                                # Check termination conditions against each point.
+                                check_pts = check_points(k+1)
+                                for l in check_pts:
+                                    # Retrieve a previous points
+                                    save_index = retrieve_save_index(save_index_table, l)
 
-                            #         # ---- Debug line
-                            #         # print "check", k+1, l, save_index
-                            #         assert save_index >= 0                                 
+                                    # ---- Debug line
+                                    # print "check", k+1, l, save_index
+                                    assert save_index >= 0                                 
 
-                            #         q_check = q_save[save_index, :] 
-                            #         p_check = p_save[save_index, :] 
-                            #         # Check termination condition
-                            #         if u_dir == 0: # Forward
-                            #             left_q_tmp, left_p_tmp = q_check, p_check
-                            #             right_q_tmp, right_p_tmp = q_tmp, p_tmp
-                            #         else:                                        
-                            #             left_q_tmp, left_p_tmp = q_tmp, p_tmp
-                            #             right_q_tmp, right_p_tmp = q_check, p_check
-                            #         Dq_tmp = right_q_tmp - left_q_tmp
+                                    q_check = q_save[save_index, :] 
+                                    p_check = p_save[save_index, :] 
+                                    # Check termination condition
+                                    if u_dir == 0: # Forward
+                                        left_q_tmp, left_p_tmp = q_check, p_check
+                                        right_q_tmp, right_p_tmp = q_tmp, p_tmp
+                                    else:                                        
+                                        left_q_tmp, left_p_tmp = q_tmp, p_tmp
+                                        right_q_tmp, right_p_tmp = q_check, p_check
+                                    Dq_tmp = right_q_tmp - left_q_tmp
 
                                     
-                            #         right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
-                            #         left_terminate_tmp = np.dot(Dq_tmp, left_p_tmp) > 0
+                                    right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
+                                    left_terminate_tmp = np.dot(Dq_tmp, left_p_tmp) > 0
 
-                            #         if left_terminate_tmp and right_terminate_tmp:
-                            #             # If the termination condition is satisfied by any subtree
-                            #             # reject the whole trajectory expansion.
-                            #             trajectory_reject = True
-                            #             break 
+                                    if left_terminate_tmp and right_terminate_tmp:
+                                        # If the termination condition is satisfied by any subtree
+                                        # reject the whole trajectory expansion.
+                                        trajectory_reject = True
+                                        break 
 
-                            #         # If the point is no longer needed, then release the space.     
-                            #         if (l>1) and release(k+1, l):
-                            #             save_index_table[save_index] = -1                                
+                                    # If the point is no longer needed, then release the space.     
+                                    if (l>1) and release(k+1, l):
+                                        save_index_table[save_index] = -1                                
 
-                            #     if trajectory_reject:
-                            #         break
+                                if trajectory_reject:
+                                    break
 
-                            # if trajectory_reject:
-                            #     break
+                            if trajectory_reject:
+                                break
 
                             Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
                             u = np.random.random() # Draw random uniform [0, 1]
@@ -1105,7 +1105,7 @@ class HMC_sampler(sampler):
                 # if (save_chain) and (m==0):
                 #     self.decision_chain[i, 0] = 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = live_point_q_old
                     accept_counter +=1
                     total_length += (step_counter+1)
                 else:
