@@ -119,7 +119,7 @@ def split_R(q_chain, thin_rate = 5, warm_up_frac = 0.5, warm_up_num = None):
     # Compute Gelman-Rubin statistics
     R = np.sqrt(var/W)
     
-    return R
+    return R    
 
 def acceptance_rate(decision_chain, start=None, end=None):
     """
@@ -157,3 +157,74 @@ def normal_lnL(q, q0, cov0):
     """
     
     return multivariate_normal.logpdf(q, mean=q0, cov=cov0)
+
+
+# /--- Used for NUTS termination criteria conditions
+def find_next(table):
+    """
+    Given the save index table, return the first empty slot.
+    """
+    for i, e in enumerate(table):
+        if e == -1:
+            return i
+
+def retrieve_save_index(table, l):
+    """
+    Given the save index table and the point number,
+    return the save indexe corresponding to the point.s
+    """
+    for i, m in enumerate(table):
+        if m == l:
+            return i
+
+def power_of_two(r):
+    """
+    Return True if r is power of two, False otherwise.
+    """
+    assert type(r) == int
+    return np.bitwise_and(r, r-1) == 0
+    
+def check_points(m):
+    """
+    Given the current point m, return all points against which to check
+    the terminiation criteria. Assumes m is even.
+    """
+    assert (m % 2) ==0
+    r = int(m)
+    # As long as r is not a power of two, keep subtracting the last possible power of two.
+    d_last = np.floor(np.log2(r))    
+    while ~power_of_two(r) and r>2:
+        r -= int(2**d_last)
+        d_last -=1
+        
+    pow_tmp = np.log2(r)
+    start = m-r+1
+    pts = [start]
+    
+    tmp = start
+    while pow_tmp > 1:
+        pow_tmp-=1
+        tmp += int(2**(pow_tmp))
+        pts.append(tmp)
+    
+    return np.asarray(pts)
+
+def release(m, l):
+    """
+    Given the current point m and that the termination condition was
+    checked against l, return True if the point should no longer be saved.
+    Return False, otherwise.
+    """
+    assert (l != 1) and (m %2) ==0
+    r_m, r_l = int(m), int(l)
+    d_last = np.floor(np.log2(r_m))
+    while ~power_of_two(r_m) and r_m>4:
+        tmp = int(2**d_last)
+        r_m -= tmp
+        r_l -= tmp
+        d_last = np.floor(np.log2(r_m))        
+    
+    if (r_m >= 4) and (r_l>1):
+        return True
+    else:
+        return False
