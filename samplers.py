@@ -996,6 +996,8 @@ class HMC_sampler(sampler):
                             # Check the termination criteria so far
                             if ((k+1) % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
+                                print "save", k+1, save_index
+                                assert save_index >= 0                                 
                                 q_save[save_index, :] = q_tmp # Current point
                                 p_save[save_index, :] = p_tmp 
                                 save_index_table[save_index] = k+1
@@ -1005,19 +1007,24 @@ class HMC_sampler(sampler):
                                 for l in check_pts:
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)
+
+                                    print "check", k+1, l, save_index
+                                    assert save_index >= 0                                 
+
                                     q_check = q_save[save_index, :] 
                                     p_check = p_save[save_index, :] 
                                     # Check termination condition
                                     if u_dir == 0: # Forward
-                                        left_q, left_p = q_check, p_check
-                                        right_q, right_p = q_tmp, p_tmp
+                                        left_q_tmp, left_p_tmp = q_check, p_check
+                                        right_q_tmp, right_p_tmp = q_tmp, p_tmp
                                     else:                                        
-                                        left_q, left_p = q_tmp, p_tmp
-                                        right_q, right_p = q_check, p_check
-                                    Dq = right_q - left_q
-                                 
-                                    right_terminate_tmp = np.dot(Dq, right_p) < 0
-                                    left_terminate_tmp = np.dot(Dq, left_p) > 0
+                                        left_q_tmp, left_p_tmp = q_tmp, p_tmp
+                                        right_q_tmp, right_p_tmp = q_check, p_check
+                                    Dq_tmp = right_q_tmp - left_q_tmp
+
+                                    
+                                    right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
+                                    left_terminate_tmp = np.dot(Dq_tmp, left_p_tmp) > 0
 
                                     if left_terminate_tmp and right_terminate_tmp:
                                         # If the termination condition is satisfied by any subtree
