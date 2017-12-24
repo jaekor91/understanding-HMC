@@ -860,7 +860,7 @@ class HMC_sampler(sampler):
         return         
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True):
+    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True, first_idx_last = 5):
         """
         The same as *_static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
@@ -870,7 +870,8 @@ class HMC_sampler(sampler):
         save in an array the following (only the first chain):
         1) phi_q (Niter, L, D): The full trajectory starting with the initial.
         2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
-        - first: If true, save the first trajectory.
+        - first: If true, save the first chain trajectory.
+        - first_idx_last: Number of trajectories to save for the first chain.
         """
     
         # Check if the correct number of starting points have been        
@@ -909,6 +910,9 @@ class HMC_sampler(sampler):
             #     assert False
             #     self.phi_q[0, 0, :] = q_initial            
 
+            if first and (m==0):
+                self.trajectories = []
+                self.trajectories_live = []                
             for i in xrange(self.Niter): # For each step
                 # Momentum resampling
                 p_tmp = self.p_sample()[0] # Sample momentun
@@ -945,7 +949,7 @@ class HMC_sampler(sampler):
                 left_terminate = False
                 right_terminate = False
 
-                if first and m==0 and i==0:
+                if first and (m==0) and (i < first_idx_last):
                     self.single_traj = [q_tmp]
                     self.single_traj_live = [live_point_q_old]
                 d = 0
@@ -980,18 +984,20 @@ class HMC_sampler(sampler):
                     save_index_table[save_index] = 1 # Note 1-indexing convention.
                     trajectory_reject = False # For rejecting the whole trajectory                    
 
-                    if first and m==0 and i==0:
+                    if first and (m==0) and (i < first_idx_last):
                         self.single_traj.append(q_tmp)
                         self.single_traj_live.append(live_point_q_new)
 
                     # Constructing the new trajectory with progressive updating.
                     # Only if the new trajectory length is greater than 1
+                    step_counter = 0
                     if L_new_sub > 1:
                         # Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
                         # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
                         # Else retain the old point.                    
                         for k in xrange(1, L_new_sub):
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
+                            step_counter += 1
 
                             # Check the termination criteria so far
                             if ((k+1) % 2) == 1: # If odd point, then save.
@@ -1055,7 +1061,7 @@ class HMC_sampler(sampler):
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
 
-                            if first and m==0 and i==0:
+                            if first and (m==0) and (i < first_idx_last):
                                 self.single_traj.append(q_tmp)
                                 self.single_traj_live.append(live_point_q_new)
 
@@ -1104,13 +1110,13 @@ class HMC_sampler(sampler):
                 if i >= self.warm_up_num: # Save the right cadence of samples.
                     self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
                     accept_counter +=1
-                    total_length += 2**(d+1)
+                    total_length += (step_counter+1)
                 else:
                     accept_counter_warm_up += 1
 
-                first = False
-
-
+                if first and (m==0) and (i < first_idx_last):
+                    self.trajectories.append(self.single_traj)
+                    self.trajectories_live.append(self.single_traj_live)
             
             dt = time.time() - start
             print "Time taken: %.2f\n" % dt 
