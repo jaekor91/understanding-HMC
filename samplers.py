@@ -748,8 +748,8 @@ class HMC_sampler(sampler):
                     
                 # Perform HMC integration and save the trajectory if requested.
                 # Live points from the old trajectory
-                live_point_q_old = np.copy(q_tmp)
-                live_point_p_old = np.copy(p_tmp)
+                live_point_q_old = q_tmp
+                live_point_p_old = p_tmp
                 # Live points from the new trajectory
                 live_point_q_new = None
                 live_point_p_new = None
@@ -819,7 +819,7 @@ class HMC_sampler(sampler):
                 A= min(1, r)
                 u = np.random.random() # Draw random uniform [0, 1]                
                 if u < A:
-                    live_point_q_old = np.copy(live_point_q_new)
+                    live_point_q_old = live_point_q_new
                 q_tmp = live_point_q_old                    
                 Es_old = np.concatenate((Es_old, Es_new))
                 Es_new = None
@@ -932,8 +932,8 @@ class HMC_sampler(sampler):
                     
                 # Perform HMC integration and save the trajectory if requested.
                 # Live points from the old trajectory
-                live_point_q_old = np.copy(q_tmp)
-                live_point_p_old = np.copy(p_tmp)
+                live_point_q_old = q_tmp
+                live_point_p_old = p_tmp
                 # Live points from the new trajectory
                 live_point_q_new = None
                 live_point_p_new = None
@@ -972,7 +972,7 @@ class HMC_sampler(sampler):
                     # Array for saving the energies corresponding to the new sub-trajectory
                     Es_new = np.zeros(L_new_sub, dtype=float)
 
-                    # Initial point of the trajectory
+                    # Initial point of the new sub-trajectory
                     if u_dir == 0: # Integrate forward
                         p_tmp, q_tmp = self.leap_frog(right_p, right_q)
                     else: # Integrate backward
@@ -1032,7 +1032,6 @@ class HMC_sampler(sampler):
                                         left_q_tmp, left_p_tmp = q_tmp, p_tmp
                                         right_q_tmp, right_p_tmp = q_check, p_check
                                     Dq_tmp = right_q_tmp - left_q_tmp
-
                                     
                                     right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
                                     left_terminate_tmp = np.dot(Dq_tmp, left_p_tmp) > 0
@@ -1087,8 +1086,8 @@ class HMC_sampler(sampler):
                     A = min(1, r)
                     u = np.random.random() # Draw random uniform [0, 1]                
                     if u < A:
-                        live_point_q_old = np.copy(live_point_q_new)
-                    q_tmp = live_point_q_old                    
+                        live_point_q_old = live_point_q_new
+                    q_tmp = live_point_q_old
                     Es_old = np.concatenate((Es_old, Es_new))
                     Es_new = None
 
