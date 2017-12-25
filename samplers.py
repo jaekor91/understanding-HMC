@@ -855,7 +855,7 @@ class HMC_sampler(sampler):
         return         
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True, first_idx_last = 5):
+    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True, first_idx_last = 10):
         """
         The same as *_static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
@@ -982,8 +982,8 @@ class HMC_sampler(sampler):
 
                     # Saving the initial point
                     save_index = find_next(save_index_table)
-                    q_save[save_index, :] = q_tmp
-                    p_save[save_index, :] = p_tmp
+                    q_save[save_index, :] = live_point_q_new
+                    p_save[save_index, :] = live_point_p_new
                     save_index_table[save_index] = 1 # Note 1-indexing convention.
                     trajectory_reject = False # For rejecting the whole trajectory                    
 
@@ -1026,11 +1026,11 @@ class HMC_sampler(sampler):
                                     p_check = p_save[save_index, :] 
                                     # Check termination condition
                                     if u_dir == 0: # Forward
-                                        left_q_tmp, left_p_tmp = q_check, p_check
+                                        left_q_tmp, left_p_tmp = q_check, -p_check
                                         right_q_tmp, right_p_tmp = q_tmp, p_tmp
                                     else:                                        
                                         left_q_tmp, left_p_tmp = q_tmp, p_tmp
-                                        right_q_tmp, right_p_tmp = q_check, p_check
+                                        right_q_tmp, right_p_tmp = q_check, -p_check
                                     Dq_tmp = right_q_tmp - left_q_tmp
                                     
                                     right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
