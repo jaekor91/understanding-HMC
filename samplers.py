@@ -870,7 +870,9 @@ class HMC_sampler(sampler):
 
         Note: Which point shoudl be saved can be confusing so I make a note for myself.
         - If the trajectory terminates because the global trajecotry meets the criteria
-        then the last live_point_q_new is saved.
+        then the last live_point_q_old is saved.
+        - If the trajectory terminates because NUTS sampling stops, then live_point_q_old
+        of the last trajectory expansion is saved.
         """
     
         # Check if the correct number of starting points have been        
@@ -1110,7 +1112,7 @@ class HMC_sampler(sampler):
                 # if (save_chain) and (m==0):
                 #     self.decision_chain[i, 0] = 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = live_point_q_old
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
                     accept_counter +=1
                     total_length += (step_counter+1)
                 else:
