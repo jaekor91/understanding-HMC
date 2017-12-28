@@ -855,7 +855,7 @@ class HMC_sampler(sampler):
         return         
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=True, first_idx_last = 10):
+    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=False, first_idx_last = 10):
         """
         The same as *_static except trajectory length is determined by the termination condition
         and pathological sub-trajectories are rejected (not included in the sampling).
@@ -1001,7 +1001,13 @@ class HMC_sampler(sampler):
                         for k in xrange(1, L_new_sub):
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
                             step_counter += 1
-
+                            # Compute new energy 
+                            E_tmp = self.E(q_tmp, p_tmp)
+                            # If the energy difference is too large then reject the trajectory.                            
+                            if np.abs(E_tmp - E_initial) > 1000: 
+                                trajectory_reject = True
+                                q_tmp = live_point_q_old                                
+                                break
                             # Check the termination criteria so far
                             if ((k+1) % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
@@ -1050,10 +1056,10 @@ class HMC_sampler(sampler):
                                 if trajectory_reject:
                                     break
 
+
                             if trajectory_reject:
                                 break
-
-                            Es_new[k] = self.E(q_tmp, p_tmp) # Compute new energy
+                            Es_new[k] = E_tmp                                
                             u = np.random.random() # Draw random uniform [0, 1]
                             E_max = np.max(Es_new[:k+1])# Get the maximum energy value
                             numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
