@@ -1,3 +1,97 @@
+This is documentation for a little project to understand HMC for inference with a fixed dimensionality.
+
+/---- Contents
+- Design and Goals
+- Organization
+- Main modules
+
+
+
+
+
+/---- Design and Goals:
+- Implement HMC with the following sampling schemes: 
+	- Fixed trajectory length: This one is not profiled extensively as we already know of pathologies that arrive from resonance.
+	- Random trajectory length
+	- NUTS sampler
+For all options, it should be possible to specify the momentum distribution and different time steps for each dimension.
+- Write diagnostics including
+	- Rhat
+	- Effective sample size
+	- Energy distribution
+- All studies are done with Multivariate-Normal distributions
+- Default parameters
+	- Chains: 10 
+	- Steps: 1000
+	- default time step: 0.5 (A conservative choice so we don't have to worry about it)
+	- Warm-up: First 200
+	- Thinning rate: Set to 1 to be able to calculate auto-correlation.
+	- Random trajectory length interval: [10, 100]. Arbitrarily chosen.
+- Metrics for comparing performance:
+	- Number of computation time step per effective sample
+	- Show estimation of standard deviation for each quantity being inferred
+- Summary plot 2 x 3:
+	- (0, 0) Scatter plot: All points. Burn-in points are marked as red. The rest black.
+	- (0, 1), (1, 0) Histograms and true distributions scaled to match the normalization of the histograms
+	- (1, 1) Metric summaries: 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
+	- (0, 2): Inferred means (or median?)
+	- (1, 2): Inferred standard deviations
+- Videos: 
+	- Video is made about the first
+	- Videos should be for the first 100 steps though the whole inference is run regarldess.
+	- Show the total number of time steps after warm-up.
+	- Show the total number of effective samples after warm-up. 
+	- Once videos are created, all supporting files are immediately discarded.
+
+- Case study: Unit multi-variate normal of dimensionality [2, 10, 100]
+	- Hyper-parameters: Single time step, starting distribution with 2 * I
+	- Video: Yes
+
+- Case study: Unit multi-variate normal of dimensionality [2, 10, 100] with bad starting point
+	- Hyper-parameters: Single time step, starting distribution with 100 * I
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.95
+	- Hyper-parameters: Single time step, starting distribution with 2 * I
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.99
+	- Hyper-parameters: Single time step, starting distribution with 2 * I
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.999
+	- Hyper-parameters: Single time step, starting distribution with 2 * I
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+	- Hyper-parameters: Single time step, starting distribution with 100 * I
+	- Variance: log-uniform sampling from [0, 100]
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
+	- Variance: log-uniform sampling from [0, 100]
+	- Video: Yes
+
+- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
+	- Variance: log-uniform sampling from [0, 100]
+	- Video: Yes
+
+- Think about mxiture cases...
+
+
+
+
+
+
+
+
+
+# ----- Archived notes
+
+
+
 utils.py 
 
 /---- Target distributions
