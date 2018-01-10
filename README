@@ -18,12 +18,16 @@ This is documentation for a little project to understand HMC for inference with 
 For all options, it should be possible to specify the momentum distribution and different time steps for each dimension.
 - All studies are done with Multivariate-Normal distributions
 - Default parameters
-	- Chains: 4 (10 might be too much)
-	- Steps: 1000
+	- Chains: 10
+	- Steps: 1000 (The large number of chains/iterations are to get accurate statistics on the speed)
 	- default time step: 0.5 (A conservative choice so we don't have to worry about it)
 	- Warm-up: First 200
 	- Thinning rate: Set to 1 to be able to calculate auto-correlation.
 	- Random trajectory length interval: [10, 100]. Arbitrarily chosen.
+- Sample number convention:
+	- The initial point gets the index 0.
+	- The final point gets the indes Niter.	Hence there are total of Niter+1 points.
+	- If N_warmup is asked to be discarded, then the first N_warmup number is discarded. That is, the first saved point is the result of taking N_warmup iterations.
 - Metrics for comparing performance:
 	- Number of computation time step per effective sample
 	- Show estimation of standard deviation for each quantity being inferred
@@ -40,7 +44,6 @@ For all options, it should be possible to specify the momentum distribution and 
 	- (2, 0): Inferred means (mean is a more useful quantity to compute)
 	- (2, 1): Inferred standard deviations
 	- (2, 2): 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio, 5) Rhat mean and std.
-
 - Videos: 
 	- Video is made about the first
 	- Videos should be for the first 100 steps though the whole inference is run regarldess.
