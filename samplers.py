@@ -444,60 +444,49 @@ class HMC_sampler(sampler):
         self.dE_chain = np.zeros((self.Nchain, self.L_chain, 1), dtype=np.float)
         
         
-    def gen_sample(self, q_start, save_chain=False, verbose=True):
+    def gen_sample(self, q_start, N_save_chain0=0, verbose=True):
         """
-        Save Nchain of (Niter-warm_up_num)//thin_rate samples.
+        Save Nchain of (Niter-warm_up_num+1)//thin_rate samples.
         Also, record acceptance/rejection rate before and after warm-up.
         
-        Appropriate samplers "Fixed", "Random", or "NUTS" is called.
+        Appropriate samplers "Random" and "NUTS". Others not supported.
         
         Args:
         - q_start: The function takes in the starting point as an input.
         This requirement gives the user a fine degree of choice on how to
         choose the starting point. Dimensions (self.Nchain, D)
-        - save_chain: If True, then save the entire *first* chain. Specifically
-        what is saved depends on the sampler.
+        - N_save_chain0: # of samples to save from chain0 from the beginning in order to produce a video.
         - verbose: If true, then print how long each chain takes.
         """
         
-        if (self.sampler_type == "Fixed"):
-            self.gen_sample_fixed(q_start, save_chain, verbose)
-        elif (self.sampler_type == "Random"):
-            self.gen_sample_random(q_start, save_chain, verbose)
-        elif (self.sampler_type == "Static"):
-            self.gen_sample_static(q_start, save_chain, verbose)
+        if (self.sampler_type == "Random"):
+            self.gen_sample_random(q_start, Nsave_chain0, verbose)
         elif (self.sampler_type == "NUTS"):
-            self.gen_sample_NUTS(q_start, save_chain, verbose)
+            self.gen_sample_NUTS(q_start, Nsave_chain0, verbose)
             
         return
 
 
 
-    def gen_sample_random(self, q_start, save_chain, verbose):
+    def gen_sample_random(self, q_start, N_save_chain0, verbose):
         """
-        The same as gen_sample_random except using different trajectory lengths.
+        Random trajectory length sampler.
 
-        - save_chain: If True, in addition to saving all warmed-up and thinned samples,
-        save in an array the following (only the first chain):
-        1) phi_q (Niter, L, D): The full trajectory starting with the initial.
-        2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
+        Same arguments as gen_sample.
         """
     
-        # Check if the correct number of starting points have been        
+        #---- Param checking/variable construction before run
+        # Check if the correct number of starting points have been provided by the user.
         assert q_start.shape[0] == self.Nchain
-        assert ~save_chain # Currently, saving chain is not supported. To support this feature
-        # and subsequent movie making, the current and the make_movie function has to be altered.
-    
-        if (save_chain):
-            self.decision_chain = np.zeros((self.Niter, 1), dtype=np.int)
-            self.phi_q = np.zeros((self.Niter, self.L+1, self.D), dtype=np.float)
-            # +1 because we want to count the initial AND final.
+        if (N_save_chain0 > 0):
+            self.decision_chain = np.zeros((self.N_save_chain0, 1), dtype=np.int)
+            self.phi_q = [] # List since the exact dimension is not known before the run.
             
         # Variables for computing acceptance rate
         accept_counter_warm_up = 0
         accept_counter = 0
         
-        # Executing HMC
+        #---- Executing HMC
         for m in xrange(self.Nchain): # For each chain
             start = time.time()   
             
