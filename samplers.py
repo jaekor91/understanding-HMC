@@ -28,7 +28,7 @@ class sampler(object):
         self.warm_up_num = warm_up_num
                     
         # Allocate memory for samples
-        self.L_chain = (self.Niter-self.warm_up_num+1)//self.thin_rate # Length of individual chain
+        self.L_chain = 1+ ((self.Niter-self.warm_up_num)//self.thin_rate) # Length of individual chain
         # Simple example: Niter = 3, N_warm_up = 0 --> N_total = 4.
         self.q_chain = np.zeros((self.Nchain, self.L_chain, self.D), dtype=np.float) # Samples
         self.lnL_chain = np.zeros((self.Nchain, self.L_chain, 1)) # loglikelihood
