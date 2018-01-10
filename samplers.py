@@ -6,7 +6,7 @@ class sampler(object):
     Parent class to MH_sampler and HMC_sampler. Contains common functions such as the plot function.
     """
     
-    def __init__(self, D, target_lnL, Nchain=2, Niter=1000, thin_rate=5, warm_up_frac=0.5, warm_up_num=None):
+    def __init__(self, D, target_lnL, Nchain=2, Niter=1000, thin_rate=1, warm_up_num=0):
         """
         Args:
         - D: Number of paramters to be inferred on.
@@ -14,8 +14,7 @@ class sampler(object):
         - Nchain: Number of chains.
         - Niter: Number of iterations.
         - Thin rate
-        - warm_up_frac: Fraction of samples to discard.
-        - warm_up_num: Sample index at which to start computing statistics. Ignore warm_up_frac if specified.
+        - warm_up_num: Sample index at which to start computing statistics. 
         
         None of these variable can be changed. In other words, if you want to change the variables, 
         then one must create a new sampler object as only the appropriate number of samples are retained.        
@@ -26,15 +25,8 @@ class sampler(object):
         self.Nchain = Nchain
         self.Niter = Niter
         self.thin_rate = thin_rate
-        self.warm_up_frac = warm_up_frac
         self.warm_up_num = warm_up_num
-        
-        # If user did not fully specify, then automatically set.
-        if warm_up_num is None:
-            self.warm_up_num = int(Niter * self.warm_up_frac)
-        else:
-            self.warm_up_num = warm_up_num
-            
+                    
         # Allocate memory for samples
         self.L_chain = (self.Niter-self.warm_up_num)//self.thin_rate # Length of individual chain
         self.q_chain = np.zeros((self.Nchain, self.L_chain, self.D), dtype=np.float) # Samples
@@ -54,8 +46,8 @@ class sampler(object):
         Remember, the chain has already been warmed up and thinned.
         """
 
-        self.R_q = split_R(self.q_chain, warm_up_frac=0, thin_rate=1)
-        self.R_lnL = split_R(self.lnL_chain, warm_up_frac=0, thin_rate=1)
+        self.R_q = split_R(self.q_chain, warm_up_num=0, thin_rate=1)
+        self.R_lnL = split_R(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
     
