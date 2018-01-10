@@ -205,7 +205,7 @@ class HMC_sampler(sampler):
         - q_start: The function takes in the starting point as an input.
         This requirement gives the user a fine degree of choice on how to
         choose the starting point. Dimensions (self.Nchain, D)
-        - N_save_chain0: # of samples to save from chain0 from the beginning in order to produce a video.
+        - N_save_chain0: (# of samples - 1) to save from chain0 from the beginning in order to produce a video.
         - verbose: If true, then print how long each chain takes.
         """
         
@@ -229,85 +229,91 @@ class HMC_sampler(sampler):
         # Check if the correct number of starting points have been provided by the user.
         assert q_start.shape[0] == self.Nchain
         if (N_save_chain0 > 0):
-            self.decision_chain = np.zeros((self.N_save_chain0, 1), dtype=np.int)
+            save_chain = True
+            self.decision_chain = np.zeros((self.N_save_chain0+1, 1), dtype=np.int)
             self.phi_q = [] # List since the exact dimension is not known before the run.
+        else:
+            save_chain = False
             
         # Variables for computing acceptance rate
         accept_counter_warm_up = 0
         accept_counter = 0
         
-        #---- Executing HMC
-        for m in xrange(self.Nchain): # For each chain
-            start = time.time()   
-            
-            # Initializing the chain
-            if verbose:
-                print "Running chain %d" % m                
-            
+        #---- Executing HMC ---- #
+        # Report time for computing each chain.
+        for m in xrange(self.Nchain): # For each chain            
+            # ---- Initializing the chain
             # Take the initial value: We treat the first point to be accepted without movement.
             self.q_chain[m, 0, :] = q_start[m]
             q_initial = q_start[m]
             p_tmp = self.p_sample()[0] # Sample momentun
-            self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
-            self.Eq_chain[m, 0, 0] = self.K(p_tmp)
-            # Save the initial point of the trajectory if asked for.
-            if save_chain and (m==0):
-                self.phi_q[0, 0, :] = q_initial            
+            E_initial = self.E(q_initial, p_tmp)
+            self.E_chain[m, 0, 0] = E_initial
+            self.dE_chain[m, 0, 0] = 0 # There is no previous momentum so this is zero.
+            E_previous = E_initial # Initial energy            
 
-            for i in xrange(self.Niter): # For each step
+            #---- Start measuring time
+            if verbose:
+                print "Running chain %d" % m                
+                start = time.time()                   
+
+            #---- Execution starts here
+            for i in xrange(1, self.Niter+1): # According to the convention we are using.
                 # Initial position/momenutm
-                q_tmp = q_initial
+                q_initial = q_tmp # Saving the initial point
                 p_tmp = self.p_sample()[0] # Sample momentun
 
                 # Compute kinetic initial energy and save
-                K_initial = self.K(p_tmp)
-                
-                # Compute the initial Energy
                 E_initial = self.E(q_tmp, p_tmp)
-                
-                # Save the initial point of the trajectory if asked for.
-                if save_chain and (m==0):
-                    self.phi_q[i, 0, :] = q_initial
+                if i >= self.warm_up_num: # Save the right cadence of samples.
+                    self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial
+                    self.dE_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial - E_previous                    
+
                     
-                # Perform HMC integration and save the trajectory if requested.
+                # Draw the length of the trajectory
                 L_random = np.random.randint(low=self.L_low, high=self.L_high, size=1)[0]
+                if save_chain and (m==0) and (i<(N_save_chain0+1)):
+                    # Construct an array of length L_random+1 and save the initial point at 0.
+                    phi_q_tmp = np.zeros((L_random+1, self.D))
+                    phi_q_tmp[0, :] = q_tmp
+
+                # Take leap frog steps
                 for l in xrange(1, L_random+1):
                     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
-                    if save_chain and (m == 0):
-                        self.phi_q[i, l, :] = q_tmp
+                    if save_chain and (m==0) and (i<(N_save_chain0+1)):
+                        phi_q_tmp[l, :] = q_tmp
 
                 # Compute final energy and save.
-                E_final = self.E(q_tmp, p_tmp)
-                
-                # Save Kinetic energy
-                if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
-                    self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
+                E_final = self.E(q_tmp, p_tmp)                
                     
                 # With correct probability, accept or reject the last proposal.
                 dE = E_final - E_initial
+                E_previous = E_initial # Save the energy so that the energy differential can be computed during the next run.
                 lnu = np.log(np.random.random(1))        
                 if (dE < 0) or (lnu < -dE): # If accepted.
-                    q_initial = q_tmp
-                    if (save_chain) and (m==0):
+                    if save_chain and (m==0) and (i<(N_save_chain0+1)):
                         self.decision_chain[i, 0] = 1
+                        self.phi_q.append(phi_q_tmp)
                     if i >= self.warm_up_num: # Save the right cadence of samples.
-                        self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
+                        self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
                         accept_counter +=1                            
                     else:
                         accept_counter_warm_up += 1                        
-                else: # Otherwise proposal rejected.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial
+                else: # Otherwise, proposal rejected.
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial # save the old point
+                    q_tmp = q_initial
             
-            dt = time.time() - start
-            print "Time taken: %.2f\n" % dt 
+            #---- Finish measuring time
+            if verbose:
+                dt = time.time() - start
+                print "Time taken: %.2f\n" % dt 
 
         print "Compute acceptance rate"
         self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
         self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
         print "During warm up: %.3f" % self.accept_R_warm_up
         print "After warm up: %.3f" % self.accept_R
-        print "Complete"            
+        print "Completed."            
 
         return 
   
@@ -1296,4 +1302,3 @@ class HMC_sampler(sampler):
 #         plt.suptitle("T_MH = %d" % idx_chain, fontsize=25)
 #         plt.savefig(fname, dpi=100, bbox_inches = "tight")
 #         plt.close()        
-    
