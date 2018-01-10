@@ -18,7 +18,7 @@ This is documentation for a little project to understand HMC for inference with 
 For all options, it should be possible to specify the momentum distribution and different time steps for each dimension.
 - All studies are done with Multivariate-Normal distributions
 - Default parameters
-	- Chains: 10 
+	- Chains: 4 (10 might be too much)
 	- Steps: 1000
 	- default time step: 0.5 (A conservative choice so we don't have to worry about it)
 	- Warm-up: First 200
@@ -31,13 +31,16 @@ For all options, it should be possible to specify the momentum distribution and 
 	- Rhat
 	- Effective sample size
 	- Energy distribution: Marginal distribution E = U + K and Del_E = (U + K)_current_initial - (U+K)_original_initial.
-- Summary plot 2 x 3:
-	- Title: (Small font) ; (Large font)
-	- (0, 0) Scatter plot: All points. Burn-in points are marked as red. The rest black.
-	- (0, 1), (1, 0) Histograms and true distributions scaled to match the normalization of the histograms
-	- (1, 1) Metric summaries: 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
-	- (0, 2): Inferred means (or median?)
-	- (1, 2): Inferred standard deviations
+- Summary plot 3 x 3:
+	- Title: Case number. # chains/# iters/R_thin/# warm-up 
+	- (0, 0): Scatter plot: All points. Burn-in points are marked as red. The rest black.
+	- (0, 1), (1, 0): Histograms and true distributions scaled to match the normalization of the histograms. (Display warm-up samples in red. Not included in the normalization.)
+	- (0, 2): Energy vs. Energy difference histograms (from all chains combined?)
+	- (1, 2): Rhat stats distributions
+	- (2, 0): Inferred means (mean is a more useful quantity to compute)
+	- (2, 1): Inferred standard deviations
+	- (2, 2): 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio, 5) Rhat mean and std.
+
 - Videos: 
 	- Video is made about the first
 	- Videos should be for the first 100 steps though the whole inference is run regarldess.
@@ -80,15 +83,13 @@ For all options, it should be possible to specify the momentum distribution and 
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Think about mxiture cases. 1, 2, and 3 normals. 
 
 
 
 
 
 
-/---- Notes for the future
-- Reversible jump sampling with HMC for a mixture of Gaussian cases. HMC --> birth/death ---> HMC
+
 
 
 
