@@ -24,10 +24,11 @@ For all options, it should be possible to specify the momentum distribution and 
 	- Warm-up: First 200
 	- Thinning rate: Set to 1 to be able to calculate auto-correlation.
 	- Random trajectory length interval: [10, 100]. Arbitrarily chosen.
-- Sample number convention:
+- Sampling convention:
 	- The initial point gets the index 0.
 	- The final point gets the indes Niter.	Hence there are total of Niter+1 points.
 	- If N_warmup is asked to be discarded, then the first N_warmup number is discarded. That is, the first saved point is the result of taking N_warmup iterations.
+	- Marginal energy and differential energy is recorded in each iteration after momentum resampling.
 - Metrics for comparing performance:
 	- Number of computation time step per effective sample
 	- Show estimation of standard deviation for each quantity being inferred
