@@ -111,7 +111,8 @@ class sampler(object):
         ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
         ax_list[1, 1].text(0.1, 0.8, r"R q1/q2: %.3f/%.3f" % (self.R_q[0], self.R_q[1]), fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.7, "R median, std: %.3f/ %.3f" % (np.median(self.R_q), np.std(self.R_q)), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.6, "Accept rate before warm up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
+        if self.warm_up_num > 0:
+            ax_list[1, 1].text(0.1, 0.6, "Accept rate before warm up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.5, "Accept rate after warm up: %.3f" % (self.accept_R), fontsize=ft_size2)        
         ax_list[1, 1].set_xlim([0, 1])
         ax_list[1, 1].set_ylim([0, 1])
@@ -210,9 +211,9 @@ class HMC_sampler(sampler):
         """
         
         if (self.sampler_type == "Random"):
-            self.gen_sample_random(q_start, Nsave_chain0, verbose)
+            self.gen_sample_random(q_start, N_save_chain0, verbose)
         elif (self.sampler_type == "NUTS"):
-            self.gen_sample_NUTS(q_start, Nsave_chain0, verbose)
+            self.gen_sample_NUTS(q_start, N_save_chain0, verbose)
             
         return
 
@@ -245,9 +246,9 @@ class HMC_sampler(sampler):
             # ---- Initializing the chain
             # Take the initial value: We treat the first point to be accepted without movement.
             self.q_chain[m, 0, :] = q_start[m]
-            q_initial = q_start[m]
+            q_tmp = q_start[m]
             p_tmp = self.p_sample()[0] # Sample momentun
-            E_initial = self.E(q_initial, p_tmp)
+            E_initial = self.E(q_tmp, p_tmp)
             self.E_chain[m, 0, 0] = E_initial
             self.dE_chain[m, 0, 0] = 0 # There is no previous momentum so this is zero.
             E_previous = E_initial # Initial energy            
@@ -309,9 +310,10 @@ class HMC_sampler(sampler):
                 print "Time taken: %.2f\n" % dt 
 
         print "Compute acceptance rate"
-        self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
+        if self.warm_up_num > 0:
+            self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
+            print "During warm up: %.3f" % self.accept_R_warm_up            
         self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
-        print "During warm up: %.3f" % self.accept_R_warm_up
         print "After warm up: %.3f" % self.accept_R
         print "Completed."            
 
