@@ -3,6 +3,7 @@ This is documentation for a little project to understand HMC for inference with 
 /---- Contents
 - Design and goals
 - Main modules
+- Case studies
 - Notes for the future
 
 
@@ -39,7 +40,7 @@ For all options, it should be possible to specify the momentum distribution and 
 - Summary plot 3 x 3:
 	- Title: Case number. # chains/# iters/R_thin/# warm-up 
 	- (0, 0): Scatter plot: All points. Burn-in points are marked as red. The rest black.
-	- (0, 1), (1, 0): Histograms and true distributions scaled to match the normalization of the histograms. (Display warm-up samples in red. Not included in the normalization.)
+	- (0, 1), (1, 0): Histograms and true distributions scaled to match the normalization of the histograms.
 	- (0, 2): Energy vs. Energy difference histograms (from all chains combined?)
 	- (1, 2): Rhat stats distributions
 	- (2, 0): Inferred means (mean is a more useful quantity to compute)
@@ -52,6 +53,11 @@ For all options, it should be possible to specify the momentum distribution and 
 	- Show the total number of effective samples after warm-up. 
 	- Once videos are created, all supporting files are immediately discarded.
 
+
+
+
+
+/---- Case studies
 - Case study 1: Unit multi-variate normal of dimensionality [2, 10, 100]
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
 	- Video: Yes

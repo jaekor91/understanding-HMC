@@ -53,33 +53,72 @@ class sampler(object):
         return
     
     
-    def plot_samples(self, show=False, savefig=False, fname=None, xmax = 4, dx =0.1, plot_normal=True, q0=None, cov0=False, plot_cov=True):
+    def plot_samples(self, title_prefix, show=False, savefig=False, xmax = None, dx = None, plot_normal=True, plot_cov=True, q0=None, cov0=None):
         """
         Plot the samples after warm up and thinning.
         Args:
-        - xmax: The plot limit. 
-        - dx: histogram bin size
+        - show: If False, don't show the plot, whic wouldn't make sense unless savefig is True.
+        - xmax: Unless specified by the user, the plot limit is set automatically,
+         by first computing inner 95% tile and expanding it by 200 percent keeping the center the same. Assumes zero centering.
+        - dx: Unless specified by the user, Bin size is set as 1% of the 95% tile range. This means with 1000 samples there should be on average
+        10 samples in each bin.
         - savefig: Saves figure with the name fname. 
-        - fname: If none, then an informative name is assigned. 
-        - plot_normal: If true, the user specified normal marginal for q1 and q2 are plotted. 
-        - plot_cov: If true, the the user provided
-        
+        - title_prefix: Title prefix must be provided by the user
+        - plot_normal: If true, the user specified normal marginal for q1 and q2 are plotted with proper normalizatin.
+        - plot_cov: If true, the the user provided normal models are plotted with proper normalizatin.
+        - q0, cov0: Are parameters of the normal models to be overlayed.
         """
         
-        # Take samples of the first and second variables
+        #---- Extract samples from all chains
         q_chain_tmp_1 = self.q_chain[:, :, 0].flatten()
         q_chain_tmp_2 = self.q_chain[:, :, 1].flatten()
         
-        # Setting boundary and bin size
-        xmin = -xmax
+        #---- Setting the boundary and binwidth
+        # Boundary
+        if xmax is None: # If the user didn't specify the range
+            # q1 range
+            # Compute 95 percent tile
+            q1_max = np.percentile(q_chain_tmp_1, 97.5)
+            q1_min = np.percentile(q_chain_tmp_1, 2.5)
+            q1_range = q1_max - q1_min
+            q1_center = (q1_max + q1_min)/2.
+            # Adjust the range
+            q1_range *= 2.5
+            q1_max = q1_center + (q1_range/2.)
+            q1_min = q1_center - (q1_range/2.)
+
+            # q2 range
+            # Compute 95 percent tile
+            q2_max = np.percentile(q_chain_tmp_2, 97.5)
+            q2_min = np.percentile(q_chain_tmp_2, 2.5)
+            q2_range = q2_max - q2_min
+            q2_center = (q2_max + q2_min)/2.
+            # Adjust the range
+            q2_range *= 2.5
+            q2_max = q2_center + (q2_range/2.)
+            q2_min = q2_center - (q2_range/2.)
+        else:
+            xmin = -xmax
+            q1_min, q1_max = xmin, xmax
+            q2_min, q2_max = xmin, xmax
+            q1_range = q2_range = q1_max - q1_min            
+
+        # Bin width
+        if dx is None:
+            dq1 = q1_range/100.
+            dq2 = q2_range/100.
+        else:
+            dq1 = dq2 = dx 
+
         
         # If plotting normal model is requested
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
             assert q0.size == self.D
-            xgrid = np.arange(xmin, xmax, 1e-2)
-            q1_marginal = multivariate_normal.pdf(xgrid, mean=q0[0], cov=cov0[0, 0]) * self.L_chain * dx * self.Nchain
-            q2_marginal = multivariate_normal.pdf(xgrid, mean=q0[1], cov=cov0[1, 1]) * self.L_chain * dx * self.Nchain
+            xgrid1 = np.arange(q1_min, q1_max, 1e-2)
+            q1_marginal = multivariate_normal.pdf(xgrid1, mean=q0[0], cov=cov0[0, 0]) * self.L_chain * dq1 * self.Nchain
+            xgrid2 = np.arange(q2_min, q2_max, 1e-2)            
+            q2_marginal = multivariate_normal.pdf(xgrid2, mean=q0[1], cov=cov0[1, 1]) * self.L_chain * dq2 * self.Nchain
 
         fig, ax_list = plt.subplots(2, 2, figsize = (12, 12))
         ft_size = 20
@@ -90,20 +129,20 @@ class sampler(object):
         ax_list[0, 0].set_xlabel("q1", fontsize=ft_size)
         ax_list[0, 0].set_ylabel("q2", fontsize=ft_size)
         ax_list[0, 0].axis("equal")
-        ax_list[0, 0].set_xlim([-xmax, xmax])
-        ax_list[0, 0].set_ylim([-xmax, xmax])
+        ax_list[0, 0].set_xlim([q1_min, q1_max])
+        ax_list[0, 0].set_ylim([q2_min, q2_max])
         # q2 histogram
-        ax_list[0, 1].hist(q_chain_tmp_2, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black", orientation="horizontal")
+        ax_list[0, 1].hist(q_chain_tmp_2, bins=np.arange(q2_min, q2_max, dq2), histtype="step", color="black", orientation="horizontal")
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
-            ax_list[0, 1].plot(q2_marginal, xgrid, c="green", lw=2)
-        ax_list[0, 1].set_ylim([-xmax, xmax])
+            ax_list[0, 1].plot(q2_marginal, xgrid2, c="green", lw=2)
+        ax_list[0, 1].set_ylim([q2_min, q2_max])
         ax_list[0, 1].set_ylabel("q2", fontsize=ft_size)
         # q1 histogram
-        ax_list[1, 0].hist(q_chain_tmp_1, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black")
+        ax_list[1, 0].hist(q_chain_tmp_1, bins=np.arange(q1_min, q1_max, dq1), histtype="step", color="black")
         if plot_normal:        
-            ax_list[1, 0].plot(xgrid, q1_marginal, c="green", lw=2)
-        ax_list[1, 0].set_xlim([-xmax, xmax])
+            ax_list[1, 0].plot(xgrid1, q1_marginal, c="green", lw=2)
+        ax_list[1, 0].set_xlim([q1_min, q1_max])
         ax_list[1, 0].set_xlabel("q1", fontsize=ft_size)
 
         # Show stats
@@ -119,8 +158,7 @@ class sampler(object):
 
         plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=25)
         if savefig:
-            if fname is None:
-                fname = "samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
+            fname = title_prefix+"samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
             plt.savefig(fname, dpi=100, bbox_inches = "tight")
         if show:
             plt.show()
