@@ -72,17 +72,14 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
 
 
 # ----- Convergence statistics
-def split_R(q_chain, thin_rate = 5, warm_up_frac = 0.5, warm_up_num = None):
+def split_R(q_chain, thin_rate = 5, warm_up_num = 0):
     """
     Given MCMC chain with dimension (Nchain, Niter, D) return Gelman-Rubin statistics corresponding to each.
     """
     Nchain, Niter, D = q_chain.shape
     
-    assert Nchain >= 1
-    
-    if warm_up_num is None: # Use the warm-up fraction provided
-        warm_up_num = int(Niter * warm_up_frac)
-    
+    assert Nchain > 1 # There should be at least two chains.
+        
     chains = [] # chains to be used to calculate the statistics.
     for m in xrange(Nchain):
         # For each chain dicard warm-up samples.
