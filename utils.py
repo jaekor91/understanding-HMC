@@ -88,7 +88,10 @@ def split_R(q_chain, thin_rate = 5, warm_up_num = 0):
         # Thin the resulting chain.
         q_chain_warmed_thinned = q_chain_warmed[::thin_rate, :]
         L_chain = q_chain_warmed_thinned.shape[0]
-        assert (L_chain % 2) == 0
+        if (L_chain % 2) == 0:
+            pass
+        else:
+            q_chain_warmed_thinned = q_chain_warmed_thinned[:L_chain-1]
 
         # Split the remaining chain in two parts and save.
         n = L_chain/2        
