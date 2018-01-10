@@ -1,24 +1,21 @@
 This is documentation for a little project to understand HMC for inference with a fixed dimensionality.
 
 /---- Contents
-- Design and Goals
-- Organization
+- Design and goals
 - Main modules
+- Notes for the future
 
 
 
 
 
-/---- Design and Goals:
+
+/---- Design and goals:
 - Implement HMC with the following sampling schemes: 
 	- Fixed trajectory length: This one is not profiled extensively as we already know of pathologies that arrive from resonance.
 	- Random trajectory length
 	- NUTS sampler
 For all options, it should be possible to specify the momentum distribution and different time steps for each dimension.
-- Write diagnostics including
-	- Rhat
-	- Effective sample size
-	- Energy distribution
 - All studies are done with Multivariate-Normal distributions
 - Default parameters
 	- Chains: 10 
@@ -30,7 +27,12 @@ For all options, it should be possible to specify the momentum distribution and 
 - Metrics for comparing performance:
 	- Number of computation time step per effective sample
 	- Show estimation of standard deviation for each quantity being inferred
+- Diagonostics
+	- Rhat
+	- Effective sample size
+	- Energy distribution: Marginal distribution E = U + K and Del_E = (U + K)_current_initial - (U+K)_original_initial.
 - Summary plot 2 x 3:
+	- Title: (Small font) ; (Large font)
 	- (0, 0) Scatter plot: All points. Burn-in points are marked as red. The rest black.
 	- (0, 1), (1, 0) Histograms and true distributions scaled to match the normalization of the histograms
 	- (1, 1) Metric summaries: 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
@@ -43,48 +45,50 @@ For all options, it should be possible to specify the momentum distribution and 
 	- Show the total number of effective samples after warm-up. 
 	- Once videos are created, all supporting files are immediately discarded.
 
-- Case study: Unit multi-variate normal of dimensionality [2, 10, 100]
+- Case study 1: Unit multi-variate normal of dimensionality [2, 10, 100]
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
 	- Video: Yes
 
-- Case study: Unit multi-variate normal of dimensionality [2, 10, 100] with bad starting point
+- Case study 2: Unit multi-variate normal of dimensionality [2, 10, 100] with bad starting point
 	- Hyper-parameters: Single time step, starting distribution with 100 * I
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.95
+- Case study 3: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.95
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.99
+- Case study 4: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.99
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.999
+- Case study 5: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.999
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 6: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Single time step, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 7: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Case study: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 8: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Think about mxiture cases...
+- Think about mxiture cases. 1, 2, and 3 normals. 
 
 
 
 
 
 
+/---- Notes for the future
+- Reversible jump sampling with HMC for a mixture of Gaussian cases. HMC --> birth/death ---> HMC
 
 
 
