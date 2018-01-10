@@ -51,7 +51,7 @@ def cov_ellipse(cov, q=None, nsig=None, **kwargs):
     return width, height, rotation
 
 
-def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
+def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue", lw=2):
     N_ellip = len(mus)
     for i in range(N_ellip):
         cov = covs[i]
@@ -60,7 +60,7 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
         mu = [mu[var_num1], mu[var_num2]]
         for j in [1, 2]:
             width, height, theta = cov_ellipse(cov, q=None, nsig=j)
-            e = Ellipse(xy=mu, width=width, height=height, angle=theta, lw=1.25)
+            e = Ellipse(xy=mu, width=width, height=height, angle=theta, lw=lw)
             ax.add_artist(e)
             e.set_clip_box(ax.bbox)
             e.set_alpha(1)
