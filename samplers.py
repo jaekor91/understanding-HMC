@@ -72,6 +72,9 @@ class sampler(object):
         #---- Extract samples from all chains
         q_chain_tmp_1 = self.q_chain[:, :, 0].flatten()
         q_chain_tmp_2 = self.q_chain[:, :, 1].flatten()
+        E_chain_tmp = self.E_chain[:, : , :].flatten() # Only HMC samplers, so these are always defined.
+        E_chain_tmp -= np.mean(E_chain_tmp)# Center the energies
+        dE_chain_tmp = self.dE_chain[:, : , :].flatten()
         
         #---- Setting the boundary and binwidth
         # Boundary
@@ -111,7 +114,7 @@ class sampler(object):
             dq1 = dq2 = dx 
 
         
-        # If plotting normal model is requested
+        #---- Plot normal models, properly normalized.
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
             assert q0.size == self.D
@@ -120,43 +123,86 @@ class sampler(object):
             xgrid2 = np.arange(q2_min, q2_max, 1e-2)            
             q2_marginal = multivariate_normal.pdf(xgrid2, mean=q0[1], cov=cov0[1, 1]) * self.L_chain * dq2 * self.Nchain
 
-        fig, ax_list = plt.subplots(2, 2, figsize = (12, 12))
-        ft_size = 20
-        # Scatter plot
-        ax_list[0, 0].scatter(q_chain_tmp_1, q_chain_tmp_2, s=1, c="black")
+        #---- Start of the figure generation ----#
+        plt.close() # Clear any open panels.
+        fig, ax_list = plt.subplots(3, 3, figsize = (20, 20))
+
+        # Font sizes
+        ft_size = 25 # axes labels, 
+        ft_size2 = 20 # Legend
+        ft_size_title = 30
+
+        #---- Scatter plot
+        ax_list[0, 0].scatter(q_chain_tmp_1, q_chain_tmp_2, s=2, c="black")
         if plot_cov:
-            plot_cov_ellipse(ax_list[0, 0], [q0], [cov0], 0, 1, MoG_color="Blue")
+            plot_cov_ellipse(ax_list[0, 0], [q0], [cov0], 0, 1, MoG_color="Blue", lw=2)
         ax_list[0, 0].set_xlabel("q1", fontsize=ft_size)
         ax_list[0, 0].set_ylabel("q2", fontsize=ft_size)
         ax_list[0, 0].axis("equal")
         ax_list[0, 0].set_xlim([q1_min, q1_max])
         ax_list[0, 0].set_ylim([q2_min, q2_max])
-        # q2 histogram
-        ax_list[0, 1].hist(q_chain_tmp_2, bins=np.arange(q2_min, q2_max, dq2), histtype="step", color="black", orientation="horizontal")
+        
+        #---- q2 histogram
+        ax_list[0, 1].hist(q_chain_tmp_2, bins=np.arange(q2_min, q2_max, dq2), histtype="step", \
+            color="black", orientation="horizontal", lw=2, label=(r"R_q2 = %.3f" % self.R_q[1]))
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
-            ax_list[0, 1].plot(q2_marginal, xgrid2, c="green", lw=2)
+            ax_list[0, 1].plot(q2_marginal, xgrid2, c="green", lw=3)
         ax_list[0, 1].set_ylim([q2_min, q2_max])
         ax_list[0, 1].set_ylabel("q2", fontsize=ft_size)
-        # q1 histogram
-        ax_list[1, 0].hist(q_chain_tmp_1, bins=np.arange(q1_min, q1_max, dq1), histtype="step", color="black")
+        ax_list[0, 1].legend(loc="upper right", fontsize=ft_size2)
+        
+        #---- q1 histogram
+        ax_list[1, 0].hist(q_chain_tmp_1, bins=np.arange(q1_min, q1_max, dq1), histtype="step", \
+            color="black", lw=2, label=(r"R_q1 = %.3f" % self.R_q[0]))
         if plot_normal:        
-            ax_list[1, 0].plot(xgrid1, q1_marginal, c="green", lw=2)
+            ax_list[1, 0].plot(xgrid1, q1_marginal, c="green", lw=3)
         ax_list[1, 0].set_xlim([q1_min, q1_max])
         ax_list[1, 0].set_xlabel("q1", fontsize=ft_size)
+        ax_list[1, 0].legend(loc="upper right", fontsize=ft_size2)
 
-        # Show stats
-        ft_size2 = 15
-        ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
-        ax_list[1, 1].text(0.1, 0.8, r"R q1/q2: %.3f/%.3f" % (self.R_q[0], self.R_q[1]), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.7, "R median, std: %.3f/ %.3f" % (np.median(self.R_q), np.std(self.R_q)), fontsize=ft_size2)
+        #---- E and dE histograms
+        # Compute the proper range
+        E_min = np.percentile(E_chain_tmp, 2.5)
+        E_max = np.percentile(E_chain_tmp, 97.5)
+        E_range = (E_max - E_min) * 2.5
+        E_center = (E_min+E_max)/2.
+        E_min = E_center - (E_range/2.)
+        E_max = E_center + (E_range/2.)
+        bin_E = E_range/100.
+        Egrid = np.arange(E_min, E_max, bin_E)
+        ax_list[0, 2].hist(E_chain_tmp, bins=Egrid, histtype="step", color="black", label="E", lw=2)
+        ax_list[0, 2].hist(dE_chain_tmp, bins=Egrid, histtype="step", color="red", label="dE", lw=2)        
+        ax_list[0, 2].set_xlim([E_min, E_max])
+        ax_list[0, 2].set_xlabel("Energy", fontsize=ft_size)
+        ax_list[0, 2].legend(loc="upper right", fontsize=ft_size2)
+
+
+        #---- Rhat distribution
+        # Compute the proper range
+        R_min = np.percentile(self.R_q, 2.5)
+        R_max = np.percentile(self.R_q, 97.5)
+        R_range = (R_max - R_min) * 2.5
+        R_center = (R_min+R_max)/2.
+        R_min = R_center - (R_range/2.)
+        R_max = R_center + (R_range/2.)
+        bin_R = R_range/50.
+        Rgrid = np.arange(R_min, R_max, bin_R)
+        ax_list[1, 2].hist(self.R_q, bins=Rgrid, histtype="step", color="black", lw=2, \
+            label = ("R med/std: %.3f/ %.3f" % (np.median(self.R_q), np.std(self.R_q))))
+        ax_list[1, 2].set_xlim([R_min, R_max])
+        ax_list[1, 2].set_xlabel("Rhat", fontsize=ft_size)
+        ax_list[1, 2].legend(loc="upper right", fontsize=ft_size2)        
+
+        #----- Stats box
+        ax_list[2, 2].scatter([0.0, 1.], [0.0, 1.], c="none")
         if self.warm_up_num > 0:
-            ax_list[1, 1].text(0.1, 0.6, "Accept rate before warm up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.5, "Accept rate after warm up: %.3f" % (self.accept_R), fontsize=ft_size2)        
-        ax_list[1, 1].set_xlim([0, 1])
-        ax_list[1, 1].set_ylim([0, 1])
+            ax_list[2, 2].text(0.1, 0.9, "RA before warm-up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
+        ax_list[2, 2].text(0.1, 0.8, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)        
+        ax_list[2, 2].set_xlim([0, 1])
+        ax_list[2, 2].set_ylim([0, 1])
 
-        plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=25)
+        plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=ft_size_title)
         if savefig:
             fname = title_prefix+"samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
             plt.savefig(fname, dpi=100, bbox_inches = "tight")
