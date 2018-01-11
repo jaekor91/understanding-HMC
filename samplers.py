@@ -39,6 +39,9 @@ class sampler(object):
         self.accept_R_warm_up = None # Acceptance rate during warm up
         self.accept_R = None # Acceptance rate after warm up
 
+        # Time for measuring total time taken for inference
+        self.dt_total = 0 # Only for chain inference.
+
         
     def compute_R(self):
         """
@@ -263,6 +266,7 @@ class sampler(object):
         if self.warm_up_num > 0:
             ax_list[1, 1].text(0.1, 0.8, "RA before warm-up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.7, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)        
+        ax_list[1, 1].text(0.1, 0.6, "Total time: %.1f s" % self.dt_total, fontsize=ft_size2)                
         ax_list[1, 1].set_xlim([0, 1])
         ax_list[1, 1].set_ylim([0, 1])
 
@@ -455,6 +459,7 @@ class HMC_sampler(sampler):
             #---- Finish measuring time
             if verbose:
                 dt = time.time() - start
+                self.dt_total += dt
                 print "Time taken: %.2f\n" % dt 
 
         print "Compute acceptance rate"
