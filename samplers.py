@@ -177,7 +177,6 @@ class sampler(object):
         ax_list[0, 2].set_xlabel("Energy", fontsize=ft_size)
         ax_list[0, 2].legend(loc="upper right", fontsize=ft_size2)
 
-
         #---- Rhat distribution
         # Compute the proper range
         R_min = np.percentile(self.R_q, 2.5)
@@ -192,15 +191,80 @@ class sampler(object):
             label = ("R med/std: %.3f/ %.3f" % (np.median(self.R_q), np.std(self.R_q))))
         ax_list[1, 2].set_xlim([R_min, R_max])
         ax_list[1, 2].set_xlabel("Rhat", fontsize=ft_size)
-        ax_list[1, 2].legend(loc="upper right", fontsize=ft_size2)        
+        ax_list[1, 2].legend(loc="upper right", fontsize=ft_size2)           
+
+
+        #---- Inferred standard deviations
+        # Extracting true diagonal covariances
+        cov0_diag = []
+        cov_diag = [] # Inferred covariances
+        for i in range(self.D):
+            cov0_diag.append(cov0[i, i])
+            cov_diag.append(np.std(self.q_chain[:, :, i])**2)
+        # Converting
+        cov0_diag = np.asarray(cov0_diag)
+        cov_diag = np.asarray(cov_diag)        
+
+        # Setting x-ranges for both plots below
+        xmax = np.max(cov0_diag) * 1.1
+        xmin = np.min(cov0_diag) * 0.9
+
+        # Plotting true vs. inferred
+        ymin = 0.5 * np.min(cov_diag)
+        ymax = 1.5 * np.max(cov_diag)                
+        ax_list[2, 1].scatter(cov0_diag, cov_diag, s=50, c="black", edgecolor="none")
+        ax_list[2, 1].plot([xmin, xmax], [xmin, xmax], c="black", lw=2, ls="--")
+        ax_list[2, 1].set_xlim([xmin, xmax])
+        ax_list[2, 1].set_ylim([ymin, ymax])
+        ax_list[2, 1].set_xlabel("True cov", fontsize=ft_size)
+        ax_list[2, 1].set_ylabel("Estimated cov", fontsize=ft_size)
+
+        # Plotting the ratio
+        cov_ratio = cov_diag/cov0_diag
+        ymin = 0.5 * np.min(cov_ratio)
+        ymax = 1.5 * np.max(cov_ratio)        
+        ax_list[2, 2].scatter(cov0_diag, cov_ratio, s=50, c="black", edgecolor="none")
+        ax_list[2, 2].axhline(y=1, lw=2, c="black", ls="--")
+        ax_list[2, 2].set_xlim([xmin, xmax])
+        ax_list[2, 2].set_ylim([ymin, ymax])
+        ax_list[2, 2].set_xlabel("True cov", fontsize=ft_size)
+        ax_list[2, 2].set_ylabel("Ratio cov", fontsize=ft_size)
+
+        #---- Inferred means
+        q_mean = []
+        for i in range(self.D):
+            q_mean.append(np.mean(self.q_chain[:, :, i]))
+        q_mean = np.asarray(q_mean)
+
+        # Calculate the bias
+        bias = q_mean-q0
+
+        # Setting x-ranges for both plots below
+        xmax = np.max(cov0_diag) * 1.1
+        xmin = np.min(cov0_diag) * 0.9
+
+        # Plotting histogram of bias
+        ymax = np.max(bias)
+        ymin = np.min(bias)
+        y_range = ymax-ymin
+        y_range *= 2.5
+        y_center = (ymax+ymin)/2.
+        ymax = y_center + (y_range/2.)
+        ymin = y_center - (y_range/2.)       
+        ax_list[2, 0].scatter(cov0_diag, bias, s=50, c="black", edgecolor="none")
+        ax_list[2, 0].axhline(y=0, c="black", ls="--", lw=2)
+        ax_list[2, 0].set_xlim([xmin, xmax])
+        ax_list[2, 0].set_ylim([ymin, ymax])
+        ax_list[2, 0].set_xlabel("True cov", fontsize=ft_size)
+        ax_list[2, 0].set_ylabel("bias(mean)", fontsize=ft_size)             
 
         #----- Stats box
-        ax_list[2, 2].scatter([0.0, 1.], [0.0, 1.], c="none")
+        ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
         if self.warm_up_num > 0:
-            ax_list[2, 2].text(0.1, 0.9, "RA before warm-up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
-        ax_list[2, 2].text(0.1, 0.8, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)        
-        ax_list[2, 2].set_xlim([0, 1])
-        ax_list[2, 2].set_ylim([0, 1])
+            ax_list[1, 1].text(0.1, 0.8, "RA before warm-up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.7, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)        
+        ax_list[1, 1].set_xlim([0, 1])
+        ax_list[1, 1].set_ylim([0, 1])
 
         plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=ft_size_title)
         if savefig:
