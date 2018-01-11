@@ -42,6 +42,12 @@ class sampler(object):
         # Time for measuring total time taken for inference
         self.dt_total = 0 # Only for chain inference.
 
+        # Total number of computations. All of the following computations has a unit cost.
+        # None other computations figure in this accounting.
+        # - Gradient computation per variable: 1.
+        # - Likelihood evaluation: 1
+        self.N_total_steps = 0
+
         
     def compute_R(self):
         """
@@ -265,8 +271,9 @@ class sampler(object):
         ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
         if self.warm_up_num > 0:
             ax_list[1, 1].text(0.1, 0.8, "RA before warm-up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.7, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)        
-        ax_list[1, 1].text(0.1, 0.6, "Total time: %.1f s" % self.dt_total, fontsize=ft_size2)                
+        ax_list[1, 1].text(0.1, 0.7, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.6, "Total time: %.1f s" % self.dt_total, fontsize=ft_size2)
+        ax_list[1, 1].text(0.1, 0.5, "Total steps: %.2E" % self.N_total_steps, fontsize=ft_size2)        
         ax_list[1, 1].set_xlim([0, 1])
         ax_list[1, 1].set_ylim([0, 1])
 
@@ -401,6 +408,7 @@ class HMC_sampler(sampler):
             q_tmp = q_start[m]
             p_tmp = self.p_sample()[0] # Sample momentun
             E_initial = self.E(q_tmp, p_tmp)
+            self.N_total_steps += 1 # Energy calculation has likelihood evaluation.
             self.E_chain[m, 0, 0] = E_initial
             self.dE_chain[m, 0, 0] = 0 # There is no previous momentum so this is zero.
             E_previous = E_initial # Initial energy            
@@ -418,6 +426,7 @@ class HMC_sampler(sampler):
 
                 # Compute kinetic initial energy and save
                 E_initial = self.E(q_tmp, p_tmp)
+                self.N_total_steps += 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
                     self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial
                     self.dE_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial - E_previous                    
@@ -433,11 +442,13 @@ class HMC_sampler(sampler):
                 # Take leap frog steps
                 for l in xrange(1, L_random+1):
                     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
+                    self.N_total_steps += L_random * self.D                    
                     if save_chain and (m==0) and (i<(N_save_chain0+1)):
                         phi_q_tmp[l, :] = q_tmp
 
                 # Compute final energy and save.
-                E_final = self.E(q_tmp, p_tmp)                
+                E_final = self.E(q_tmp, p_tmp)
+                self.N_total_steps += 1                               
                     
                 # With correct probability, accept or reject the last proposal.
                 dE = E_final - E_initial
