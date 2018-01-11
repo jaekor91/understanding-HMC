@@ -71,10 +71,13 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue", lw=2):
 
 
 
+
 # ----- Convergence statistics
-def split_R(q_chain, thin_rate = 5, warm_up_num = 0):
+def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
     """
-    Given MCMC chain with dimension (Nchain, Niter, D) return Gelman-Rubin statistics corresponding to each.
+    Given MCMC chain with dimension (Nchain, Niter, D) return 
+    - Gelman-Rubin statistics corresponding to each variable.
+    - Effective sample number for each varaible.
     """
     Nchain, Niter, D = q_chain.shape
     
@@ -119,7 +122,8 @@ def split_R(q_chain, thin_rate = 5, warm_up_num = 0):
     # Compute Gelman-Rubin statistics
     R = np.sqrt(var/W)
     
-    return R    
+    return R, n_eff
+
 
 def acceptance_rate(decision_chain, start=None, end=None):
     """

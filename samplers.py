@@ -49,15 +49,15 @@ class sampler(object):
         self.N_total_steps = 0
 
         
-    def compute_R(self):
+    def compute_convergence_stats(self):
         """
         Compute stats on the chain and return.
         
         Remember, the chain has already been warmed up and thinned.
         """
 
-        self.R_q = split_R(self.q_chain, warm_up_num=0, thin_rate=1)
-        self.R_lnL = split_R(self.lnL_chain, warm_up_num=0, thin_rate=1)
+        self.R_q, n_eff = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
+        self.R_lnL, n_eff = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
     
@@ -201,7 +201,6 @@ class sampler(object):
         ax_list[1, 2].set_xlim([R_min, R_max])
         ax_list[1, 2].set_xlabel("Rhat", fontsize=ft_size)
         ax_list[1, 2].legend(loc="upper right", fontsize=ft_size2)           
-
 
         #---- Inferred standard deviations
         # Extracting true diagonal covariances
