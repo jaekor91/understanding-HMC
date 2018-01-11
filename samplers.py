@@ -36,6 +36,7 @@ class sampler(object):
         # Stats 
         self.R_q = None # R statistics for each parameter
         self.R_lnL = None # R stats for the loglikelihood.
+        self.n_eff = None # Effective number of samples
         self.accept_R_warm_up = None # Acceptance rate during warm up
         self.accept_R = None # Acceptance rate after warm up
 
@@ -56,8 +57,8 @@ class sampler(object):
         Remember, the chain has already been warmed up and thinned.
         """
 
-        self.R_q, n_eff = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
-        self.R_lnL, n_eff = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
+        self.R_q, self.n_eff = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
+        self.R_lnL, self.n_eff = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
     
