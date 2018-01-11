@@ -132,7 +132,7 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         rho_t2 = 1 - V_t2/(2*var[i])
         rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
         t = 1 # Current t
-        while (t < n-1): # While t is less than the length of the chain
+        while (t < n-2): # While t is less than the length of the chain
             # Compute V_t and rho_t
             V_t = variogram(chains, i, t+2)
             rho_t.append(1 - V_t/(2*var[i]))
@@ -146,8 +146,10 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         
         # Sum all rho upto maximum T
         sum_rho = np.sum(rho_t[:-2])
-
         n_eff[i] = m*n/(1+2*sum_rho)# Computed n_eff
+        # print i, sum_rho, n_eff[i]
+
+
     return R, n_eff
 
 def variogram(chains, var_num, t_lag):

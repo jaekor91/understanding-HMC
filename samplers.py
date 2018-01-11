@@ -36,7 +36,7 @@ class sampler(object):
         # Stats 
         self.R_q = None # R statistics for each parameter
         self.R_lnL = None # R stats for the loglikelihood.
-        self.n_eff = None # Effective number of samples
+        self.n_eff_q = None # Effective number of samples
         self.accept_R_warm_up = None # Acceptance rate during warm up
         self.accept_R = None # Acceptance rate after warm up
 
@@ -57,8 +57,8 @@ class sampler(object):
         Remember, the chain has already been warmed up and thinned.
         """
 
-        self.R_q, self.n_eff = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
-        self.R_lnL, self.n_eff = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
+        self.R_q, self.n_eff_q = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
+        self.R_lnL, _ = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
     
@@ -274,6 +274,7 @@ class sampler(object):
         ax_list[1, 1].text(0.1, 0.7, "RA after warm-up: %.3f" % (self.accept_R), fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.6, "Total time: %.1f s" % self.dt_total, fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.5, "Total steps: %.2E" % self.N_total_steps, fontsize=ft_size2)        
+        ax_list[1, 1].text(0.1, 0.4, "N_sample_total: %.2E" % (self.L_chain * self.Nchain), fontsize=ft_size2)                
         ax_list[1, 1].set_xlim([0, 1])
         ax_list[1, 1].set_ylim([0, 1])
 
