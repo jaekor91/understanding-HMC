@@ -153,7 +153,7 @@ class sampler(object):
         
         #---- q2 histogram
         ax_list[0, 1].hist(q_chain_tmp_2, bins=np.arange(q2_min, q2_max, dq2), histtype="step", \
-            color="black", orientation="horizontal", lw=2, label=(r"R_q2 = %.3f" % self.R_q[1]))
+            color="black", orientation="horizontal", lw=2, label=(r"R = %.3f" % self.R_q[1]))
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
             ax_list[0, 1].plot(q2_marginal, xgrid2, c="green", lw=3)
@@ -163,7 +163,7 @@ class sampler(object):
         
         #---- q1 histogram
         ax_list[1, 0].hist(q_chain_tmp_1, bins=np.arange(q1_min, q1_max, dq1), histtype="step", \
-            color="black", lw=2, label=(r"R_q1 = %.3f" % self.R_q[0]))
+            color="black", lw=2, label=(r"R = %.3f" % self.R_q[0]))
         if plot_normal:        
             ax_list[1, 0].plot(xgrid1, q1_marginal, c="green", lw=3)
         ax_list[1, 0].set_xlim([q1_min, q1_max])
