@@ -121,8 +121,55 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
     
     # Compute Gelman-Rubin statistics
     R = np.sqrt(var/W)
-    
+
+    #---- n_eff computation
+    n_eff = np.zeros(self.D, dtype=int) # There is an effective number for each.
+    for i in range(self.D): # For each variable
+        # First two base cases rho_t
+        V_t1 = variogram(chains, i, 1)
+        V_t2 = variogram(chains, i, 2)
+        rho_t1 = 1 - V_t1/(2*var[i])
+        rho_t2 = 1 - V_t2/(2*var[i])
+        rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
+        t = 1 # Current t
+        while True
+            # Compute V_t and rho_t
+            V_t = variogram(chains, i, t+2)
+            rho_t.append(1 - V_t/(2*var[i]))
+
+            # Check for termination condition
+            if ((t%2)==1) & ((rho_t[-1]+rho_t[-2]) < 0): # If t is odd and t
+                break
+            
+            # Otherwise just update t
+            t += 1
+        
+        # Sum all rho upto maximum T
+        sum_rho = np.sum(rho_t[:-2])
+
+        n_eff[i] = m*n/(1+2*sum_rho)# Computed n_eff
     return R, n_eff
+
+def variogram(chains, var_num, t_lag):
+    """
+    Variogram as defined in BDA above (11.7).
+    
+    Args:
+    - chains: List with dimension(m chains, (n samples, number of variables)).
+    - var_num: Variable of interest
+    - t_lag: Time lag
+    """
+    m = len(chains)
+    V_t = 0
+    for i in range(m): # For each chain
+        chain_tmp = chains[m] # Grab the chain
+        # Compute the inner sum
+        inner_sum = np.sum(np.square(chain_tmp[t_lag:, var_num]-chain_tmp[:t_lag, var_num]))
+        # Add to the cumulative sum
+        V_t += inner_sum
+    V_t /= float(m*(n-t_lag))
+
+    return V_t    
 
 
 def acceptance_rate(decision_chain, start=None, end=None):
