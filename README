@@ -42,11 +42,11 @@ For all options, it should be possible to specify the momentum distribution and 
 	- (0, 0): Scatter plot: All points. Burn-in points are marked as red. The rest black.
 	- (0, 1), (1, 0): Histograms and true distributions scaled to match the normalization of the histograms.
 	- (0, 2): Energy vs. Energy difference histograms (from all chains combined?)
-	- (1, 1): Plot of likelihoods?
+	- (1, 1): 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
 	- (1, 2): Rhat stats distributions. Report mean and std.  
-	- (2, 0): Inferred means (mean is a more useful quantity to compute)
-	- (2, 1): Inferred standard deviations
-	- (2, 2): 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
+	- (2, 0): Inferred bias(mean) vs. true variance (mean is a more useful quantity to compute)
+	- (2, 1): Inferred vs. true standard deviations
+	- (2, 2): Inferred/true standard deviations
 - Videos: 
 	- Video is made about the first
 	- Videos should be for the first 100 steps though the whole inference is run regarldess.
