@@ -123,7 +123,7 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
     R = np.sqrt(var/W)
 
     #---- n_eff computation
-    n_eff = np.zeros(D, dtype=int) # There is an effective number for each.
+    n_eff = np.zeros(D, dtype=float) # There is an effective number for each.
     for i in range(D): # For each variable
         # First two base cases rho_t
         V_t1 = variogram(chains, i, 1)
@@ -132,7 +132,7 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         rho_t2 = 1 - V_t2/(2*var[i])
         rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
         t = 1 # Current t
-        while True:
+        while (t < n-1): # While t is less than the length of the chain
             # Compute V_t and rho_t
             V_t = variogram(chains, i, t+2)
             rho_t.append(1 - V_t/(2*var[i]))
@@ -160,9 +160,10 @@ def variogram(chains, var_num, t_lag):
     - t_lag: Time lag
     """
     m = len(chains)
+    n = chains[0].shape[0]
     V_t = 0
     for i in range(m): # For each chain
-        chain_tmp = chains[m] # Grab the chain
+        chain_tmp = chains[i] # Grab the chain
         # Compute the inner sum
         inner_sum = np.sum(np.square(chain_tmp[t_lag:, var_num]-chain_tmp[:-t_lag, var_num]))
         # Add to the cumulative sum
