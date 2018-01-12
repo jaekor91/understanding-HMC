@@ -535,11 +535,11 @@ class HMC_sampler(sampler):
 
             #---- Execution starts here ----#
             for i in xrange(1, self.Niter+1): # For each step
-                # Initial position/momenutm
-                q_initial = q_tmp # Saving the initial point
-                p_tmp = self.p_sample()[0] # Sample momentun
+                #---- Sample momentun
+                p_tmp = self.p_sample()[0] 
+                # q_tmp is the initial point set from the last run.
 
-                # Compute initial energy and save
+                #---- Compute initial energy and save
                 E_initial = self.E(q_tmp, p_tmp)
                 self.N_total_steps += 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
@@ -553,7 +553,7 @@ class HMC_sampler(sampler):
                 # Live points from the new trajectory
                 live_point_q_new = None
                 live_point_p_new = None
-                # Left and right boundary point -- Initial point is both left and right boundary points initially.
+                # Left and right boundary points -- Initial point is both left and right boundary points initially.
                 left_q = q_tmp
                 left_p = -p_tmp
                 right_q = q_tmp
@@ -566,6 +566,13 @@ class HMC_sampler(sampler):
                 left_terminate = False
                 right_terminate = False
 
+                #---- Index table
+                # Used to indicate where intermediate boundary points are saved q_save, p_save.
+                # Note that leftmost and rightmost boundary points are saved separately.
+                # The index table is used purely for checking sub-trajectory termination.
+                # Initially all -1. If not -1, then holds the point number m. The corresponding
+                # array index is the save index. This scheme requires manual release.
+                save_index_table = np.ones(self.d_max+1, dtype=int) * -1
 
                 #---- Main sampling occurs here.
                 d = 0
@@ -574,13 +581,15 @@ class HMC_sampler(sampler):
                         print "Doubling number d exceeds d_max = %d" % self.d_max
                         assert False
 
-                    # Index table
-                    # Initially all -1. If not -1, then holds the point number m. The corresponding
-                    # array index is the save index. This scheme requires manual release.
-                    save_index_table = np.ones(self.d_max+1, dtype=int) * -1
+                    # Refresh the index table
+                    save_index_table = -1
 
-                    L_new_sub = 2**d # Length of new sub trajectory
-                    u_dir = np.random.randint(low=0, high=2, size=1) # If 0, integrate forward. Else integrate backward.
+                    # Compute the length of the new sub trajectory
+                    L_new_sub = 2**d
+
+                    # Random draw of the expansion direction.
+                    # If 0, integrate forward. Else integrate backward.                    
+                    u_dir = np.random.randint(low=0, high=2, size=1) 
 
                     # Array for saving the energies corresponding to the new sub-trajectory
                     Es_new = np.zeros(L_new_sub, dtype=float)
@@ -598,11 +607,9 @@ class HMC_sampler(sampler):
                     q_save[save_index, :] = live_point_q_new
                     p_save[save_index, :] = live_point_p_new
                     save_index_table[save_index] = 1 # Note 1-indexing convention.
-                    trajectory_reject = False # For rejecting the whole trajectory                    
-
-                    if first and (m==0) and (i < first_idx_last):
-                        self.single_traj.append(q_tmp)
-                        self.single_traj_live.append(live_point_q_new)
+                    
+                    # For rejecting the whole trajectory                    
+                    trajectory_reject = False 
 
                     # Constructing the new trajectory with progressive updating.
                     # Only if the new trajectory length is greater than 1
@@ -718,8 +725,9 @@ class HMC_sampler(sampler):
                     # Next doubling length 2**d
                     d +=1
 
-                if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
+                # Dynamic loop was exited. Save the right cadence of samples.
+                if i >= self.warm_up_num:
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp 
             
             #---- Finish measuring time
             if verbose:
@@ -727,6 +735,7 @@ class HMC_sampler(sampler):
                 self.dt_total += dt
                 print "Time taken: %.2f\n" % dt 
 
+        #---- Finally tally before completion.
         print "Compute acceptance rate: By default equla to 1."
         if self.warm_up_num > 0:
             self.accept_R_warm_up = 1.
