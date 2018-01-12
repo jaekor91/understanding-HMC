@@ -533,8 +533,8 @@ class HMC_sampler(sampler):
                 print "Running chain %d" % m                
                 start = time.time()                   
 
-            #---- Execution starts here
-            for i in xrange(1, self.Niter): # For each step
+            #---- Execution starts here ----#
+            for i in xrange(1, self.Niter+1): # For each step
                 # Initial position/momenutm
                 q_initial = q_tmp # Saving the initial point
                 p_tmp = self.p_sample()[0] # Sample momentun
@@ -546,7 +546,7 @@ class HMC_sampler(sampler):
                     self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial
                     self.dE_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial - E_previous                    
                     
-                # Perform HMC integration and save the trajectory if requested.
+                #---- Set up necessary variables
                 # Live points from the old trajectory
                 live_point_q_old = q_tmp
                 live_point_p_old = p_tmp
@@ -562,19 +562,16 @@ class HMC_sampler(sampler):
                 Es_old = np.array([E_initial]) # We save all the energies
                 Es_new = None # For the new trajectory, we save all of the energies.
 
-                # Main sampling occurs here.
                 # Continue doubling the trajectory until termination conditions are reached.
                 left_terminate = False
                 right_terminate = False
 
-                if first and (m==0) and (i < first_idx_last):
-                    self.single_traj = [q_tmp]
-                    self.single_traj_live = [live_point_q_old]
+
+                #---- Main sampling occurs here.
                 d = 0
-                # while d < 6:
-                while (~left_terminate) or (~right_terminate):
+                while (~left_terminate) or (~right_terminate): # While the termination condition hasn't been met.
                     if d > self.d_max-1:
-                        print "d must be samller than d_max = %d" % self.d_max
+                        print "Doubling number d exceeds d_max = %d" % self.d_max
                         assert False
 
                     # Index table
@@ -721,17 +718,8 @@ class HMC_sampler(sampler):
                     # Next doubling length 2**d
                     d +=1
 
-
                 if i >= self.warm_up_num: # Save the right cadence of samples.
-                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
-                    accept_counter +=1
-                    total_length += (step_counter+1)
-                else:
-                    accept_counter_warm_up += 1
-
-                if first and (m==0) and (i < first_idx_last):
-                    self.trajectories.append(self.single_traj)
-                    self.trajectories_live.append(self.single_traj_live)
+                    self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
             
             #---- Finish measuring time
             if verbose:
