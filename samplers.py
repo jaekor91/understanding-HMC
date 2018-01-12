@@ -58,7 +58,7 @@ class sampler(object):
         """
 
         self.R_q, self.n_eff_q = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
-        self.R_lnL, _ = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
+        # self.R_lnL, _ = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
     
