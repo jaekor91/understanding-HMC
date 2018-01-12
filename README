@@ -42,7 +42,7 @@ For all options, it should be possible to specify the momentum distribution and 
 	- (0, 0): Scatter plot: All points. Burn-in points are marked as red. The rest black.
 	- (0, 1), (1, 0): Histograms and true distributions scaled to match the normalization of the histograms.
 	- (0, 2): Energy vs. Energy difference histograms (from all chains combined?)
-	- (1, 1): 1) Total time taken, 2) Total computation step, 3) Total effective sample, 4) Ratio
+	- (1, 1): 1) Total time taken, 2) Total computation step, 3) # step per ES, median, 4) worst, 5) best
 	- (1, 2): Rhat stats distributions. Report mean and std.  
 	- (2, 0): Inferred bias(mean) vs. true variance (mean is a more useful quantity to compute)
 	- (2, 1): Inferred vs. true standard deviations

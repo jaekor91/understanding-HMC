@@ -275,6 +275,9 @@ class sampler(object):
         ax_list[1, 1].text(0.1, 0.6, "Total time: %.1f s" % self.dt_total, fontsize=ft_size2)
         ax_list[1, 1].text(0.1, 0.5, "Total steps: %.2E" % self.N_total_steps, fontsize=ft_size2)        
         ax_list[1, 1].text(0.1, 0.4, "N_sample_total: %.2E" % (self.L_chain * self.Nchain), fontsize=ft_size2)                
+        ax_list[1, 1].text(0.1, 0.3, "#steps/ES med: %.2E" % (self.N_total_steps/np.median(self.n_eff_q)), fontsize=ft_size2)                
+        ax_list[1, 1].text(0.1, 0.2, "#steps/ES best: %.2E" % (self.N_total_steps/np.max(self.n_eff_q)), fontsize=ft_size2)                
+        ax_list[1, 1].text(0.1, 0.1, "#steps/ES worst: %.2E" % (self.N_total_steps/np.min(self.n_eff_q)), fontsize=ft_size2)                
         ax_list[1, 1].set_xlim([0, 1])
         ax_list[1, 1].set_ylim([0, 1])
 
