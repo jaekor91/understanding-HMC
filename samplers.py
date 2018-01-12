@@ -426,7 +426,7 @@ class HMC_sampler(sampler):
                 q_initial = q_tmp # Saving the initial point
                 p_tmp = self.p_sample()[0] # Sample momentun
 
-                # Compute kinetic initial energy and save
+                # Compute initial energy and save
                 E_initial = self.E(q_tmp, p_tmp)
                 self.N_total_steps += 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
@@ -535,19 +535,16 @@ class HMC_sampler(sampler):
 
             #---- Execution starts here
             for i in xrange(1, self.Niter): # For each step
-                # Momentum resampling
+                # Initial position/momenutm
+                q_initial = q_tmp # Saving the initial point
                 p_tmp = self.p_sample()[0] # Sample momentun
 
-                # Compute kinetic initial energy and save
-                K_initial = self.K(p_tmp)
-                
-                # Compute the initial Energy
+                # Compute initial energy and save
                 E_initial = self.E(q_tmp, p_tmp)
-                
-                # # Save the initial point of the trajectory if asked for.
-                # if save_chain and (m==0):
-                #     assert False
-                #     self.phi_q[i, 0, :] = q_initial
+                self.N_total_steps += 1
+                if i >= self.warm_up_num: # Save the right cadence of samples.
+                    self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial
+                    self.dE_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_initial - E_previous                    
                     
                 # Perform HMC integration and save the trajectory if requested.
                 # Live points from the old trajectory
