@@ -492,6 +492,10 @@ class HMC_sampler(sampler):
         The same as *_static (no longer supported) except trajectory length is determined dynamically
         and pathological sub-trajectories are rejected (not included in the sampling).
         That is, stop expansion process if any sub-tree of the new sub-trajectory meets the termination criteria. 
+
+        Notes on saving: Since NUTS scheme expands the trajectory forward and backward randomly,
+        for each iteration, we create a list and keep appending sub-trajetories that are 
+        represented as a list.
         
         See gen_sample "args"
         """
@@ -511,28 +515,26 @@ class HMC_sampler(sampler):
         p_save = np.zeros((self.d_max+1, self.D), dtype=float)
         
         #---- Executing HMC
-        for m in xrange(self.Nchain): # For each chain
-            start = time.time()   
-            
-            # Initializing the chain
+        # Report time for computing each chain.
+        for m in xrange(self.Nchain): # For each chain            
+            # ---- Initializing the chain
+            # Take the initial value: We treat the first point to be accepted without movement.
+            self.q_chain[m, 0, :] = q_start[m]
+            q_tmp = q_start[m]
+            p_tmp = self.p_sample()[0] # Sample momentun
+            E_initial = self.E(q_tmp, p_tmp)
+            self.N_total_steps += 1 # Energy calculation has likelihood evaluation.
+            self.E_chain[m, 0, 0] = E_initial
+            self.dE_chain[m, 0, 0] = 0 # There is no previous momentum so this is zero.
+            E_previous = E_initial # Initial energy            
+
+            #---- Start measuring time
             if verbose:
                 print "Running chain %d" % m                
-            
-            # Initial points
-            q_tmp = q_start[m]
+                start = time.time()                   
 
-            # self.E_chain[m, 0, 0] = self.E(q_initial, p_tmp)
-            # self.Eq_chain[m, 0, 0] = self.K(p_tmp)
-            # Save the initial point of the trajectory if asked for.
-            # if save_chain and (m==0):
-            #     assert False
-            #     self.phi_q[0, 0, :] = q_initial            
-
-            if first and (m==0):
-                self.trajectories = []
-                self.trajectories_live = []    
-
-            for i in xrange(self.Niter): # For each step
+            #---- Execution starts here
+            for i in xrange(1, self.Niter): # For each step
                 # Momentum resampling
                 p_tmp = self.p_sample()[0] # Sample momentun
 
@@ -734,8 +736,11 @@ class HMC_sampler(sampler):
                     self.trajectories.append(self.single_traj)
                     self.trajectories_live.append(self.single_traj_live)
             
-            dt = time.time() - start
-            print "Time taken: %.2f\n" % dt 
+            #---- Finish measuring time
+            if verbose:
+                dt = time.time() - start
+                self.dt_total += dt
+                print "Time taken: %.2f\n" % dt 
 
         print "Compute acceptance rate: By default equla to 1."
         if self.warm_up_num > 0:
