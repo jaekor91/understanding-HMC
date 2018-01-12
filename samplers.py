@@ -582,7 +582,7 @@ class HMC_sampler(sampler):
                         assert False
 
                     # Refresh the index table
-                    save_index_table = -1
+                    save_index_table[:] = -1
 
                     # Compute the length of the new sub trajectory
                     L_new_sub = 2**d
@@ -599,8 +599,11 @@ class HMC_sampler(sampler):
                         p_tmp, q_tmp = self.leap_frog(right_p, right_q)
                     else: # Integrate backward
                         p_tmp, q_tmp = self.leap_frog(left_p, left_q)
+                    self.N_total_steps += self.D
+
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     Es_new[0] = self.E(q_tmp, p_tmp)
+                    self.N_total_steps += 1
 
                     # Saving the initial point
                     save_index = find_next(save_index_table)
@@ -620,9 +623,11 @@ class HMC_sampler(sampler):
                         for k in xrange(1, L_new_sub):
                             # Step forward                            
                             p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) 
+                            self.N_total_steps += self.D                            
 
                             # Compute new energy 
                             E_tmp = self.E(q_tmp, p_tmp)
+                            self.N_total_steps += 1                            
 
                             # If the energy difference is too large then reject the trajectory.                            
                             if np.abs(E_tmp - E_initial) > 1000: 
@@ -678,8 +683,6 @@ class HMC_sampler(sampler):
                                         save_index_table[save_index] = -1                                
 
                             #---- If the sub-trajectory is rejected, then break out of the sub-trajectory expansion.
-                                if trajectory_reject:
-                                    break
                             if trajectory_reject:
                                 break
 
