@@ -118,8 +118,6 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         mean_within[j, :] = np.mean(chains[j], axis=0)
     mean_all = np.mean(mean_within, axis=0)
     B= np.sum(np.square(mean_within-mean_all), axis=0) * n /float(m-1)     
-        # B = np.std(mean_within, ddof=1, axis=0) * n
-    print B
 
     # Unbiased posterior variance estimate
     var = W * (n-1)/float(n) + B / float(n)
