@@ -613,32 +613,35 @@ class HMC_sampler(sampler):
 
                     # Constructing the new trajectory with progressive updating.
                     # Only if the new trajectory length is greater than 1
-                    step_counter = 0
                     if L_new_sub > 1:
                         # Uniform progressive sampling: In each step, sample a uniform number u ~[0, 1] and compare
                         # to r = sum_i=1^k-1 pi(z_i) / sum_i=1^k pi(z_i). If u > r take the new point as the live point.
                         # Else retain the old point.                    
                         for k in xrange(1, L_new_sub):
-                            p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) # Step forward
-                            step_counter += 1
+                            # Step forward                            
+                            p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp) 
+
                             # Compute new energy 
                             E_tmp = self.E(q_tmp, p_tmp)
+
                             # If the energy difference is too large then reject the trajectory.                            
                             if np.abs(E_tmp - E_initial) > 1000: 
                                 trajectory_reject = True
-                                q_tmp = live_point_q_old                                
+                                q_tmp = live_point_q_old
                                 break
-                            # Check the termination criteria so far
+
+                            # Check the termination criteria within the sub-trajectory so far.
                             if ((k+1) % 2) == 1: # If odd point, then save.
                                 save_index = find_next(save_index_table)
-                                # ---- Debug line
-                                # print "save", k+1, save_index
-                                assert save_index >= 0                                 
                                 q_save[save_index, :] = q_tmp # Current point
                                 p_save[save_index, :] = p_tmp 
-                                save_index_table[save_index] = k+1
+                                save_index_table[save_index] = k+1                                
+                                # ---- Debug line
+                                # print "save", k+1, save_index
+                                # assert save_index >= 0                                 
                             else: 
-                                # Check termination conditions against each point.
+                                # Check termination conditions against each point calculated
+                                # according to the rule.
                                 check_pts = check_points(k+1)
                                 for l in check_pts:
                                     # Retrieve a previous points
@@ -646,10 +649,11 @@ class HMC_sampler(sampler):
 
                                     # ---- Debug line
                                     # print "check", k+1, l, save_index
-                                    assert save_index >= 0                                 
+                                    # assert save_index >= 0                                 
 
                                     q_check = q_save[save_index, :] 
-                                    p_check = p_save[save_index, :] 
+                                    p_check = p_save[save_index, :]
+
                                     # Check termination condition
                                     if u_dir == 0: # Forward
                                         left_q_tmp, left_p_tmp = q_check, -p_check
@@ -673,28 +677,26 @@ class HMC_sampler(sampler):
                                     if (l>1) and release(k+1, l):
                                         save_index_table[save_index] = -1                                
 
+                            #---- If the sub-trajectory is rejected, then break out of the sub-trajectory expansion.
                                 if trajectory_reject:
                                     break
-
-
                             if trajectory_reject:
                                 break
+
+                            # If the sub-trajectory expansion is approved, then save the energy.
                             Es_new[k] = E_tmp                                
                             u = np.random.random() # Draw random uniform [0, 1]
                             E_max = np.max(Es_new[:k+1])# Get the maximum energy value
                             numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
                             denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
-                            r = numerator/denominator# Compute the desired ratio.
+                            r = numerator/denominator # Compute the desired ratio.
 
                             if u > r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
-
-                            if first and (m==0) and (i < first_idx_last):
-                                self.single_traj.append(q_tmp)
-                                self.single_traj_live.append(live_point_q_new)
-
-                    if trajectory_reject: # If the last expansion is rejected then stop NUTS
+                    
+                    # If the sub-trajectory is rejected, stop NUTS
+                    if trajectory_reject: 
                         break
 
                     # Update the boundary point if last                        
@@ -707,7 +709,6 @@ class HMC_sampler(sampler):
                     # - Perform a biased trajectory sampling and keep one live point. 
                     # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
                     E_max = max(np.max(Es_new), np.max(Es_old))
-                    # print np.max(Es_new),  np.max(Es_old)
                     r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
                     A = min(1, r)
                     u = np.random.random() # Draw random uniform [0, 1]                
@@ -724,6 +725,9 @@ class HMC_sampler(sampler):
 
                     # Next doubling length 2**d
                     d +=1
+
+                # Saving the energy for dE calculation.
+                E_previous = E_initial
 
                 # Dynamic loop was exited. Save the right cadence of samples.
                 if i >= self.warm_up_num:
