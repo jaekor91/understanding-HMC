@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from scipy.stats import multivariate_normal
+from scipy.stats import norm
 
 import numpy as np
 from scipy.stats import norm, chi2
@@ -80,14 +81,15 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
     - Effective sample number for each varaible.
     """
     Nchain, Niter, D = q_chain.shape
-    
+
     assert Nchain > 1 # There should be at least two chains.
-        
+
+
     chains = [] # chains to be used to calculate the statistics.
     for m in xrange(Nchain):
         # For each chain dicard warm-up samples.
         q_chain_warmed = q_chain[m, warm_up_num:, :]
-            
+
         # Thin the resulting chain.
         q_chain_warmed_thinned = q_chain_warmed[::thin_rate, :]
         L_chain = q_chain_warmed_thinned.shape[0]
@@ -100,7 +102,7 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         n = L_chain/2        
         chains.append(q_chain_warmed_thinned[:n])
         chains.append(q_chain_warmed_thinned[n:])
-    
+
     m = len(chains)
     # Compute within chain variance, W
     # This an under-estimate of true variance.
@@ -108,17 +110,20 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
     for j in range(m):
         var_within[j, :] = np.std(chains[j], ddof=1, axis=0)
     W = np.mean(var_within, axis=0)
-    
+
     # Compute between chain variance, B
     # This in general is an over-estimate because of the overdispersion of the starting distribution.
     mean_within = np.empty((m, D))
     for j in range(m):
         mean_within[j, :] = np.mean(chains[j], axis=0)
-    B = np.std(mean_within, ddof=1, axis=0) * n
-    
+    mean_all = np.mean(mean_within, axis=0)
+    B= np.sum(np.square(mean_within-mean_all), axis=0) * n /float(m-1)     
+        # B = np.std(mean_within, ddof=1, axis=0) * n
+    print B
+
     # Unbiased posterior variance estimate
     var = W * (n-1)/float(n) + B / float(n)
-    
+
     # Compute Gelman-Rubin statistics
     R = np.sqrt(var/W)
 
@@ -128,8 +133,8 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         # First two base cases rho_t
         V_t1 = variogram(chains, i, 1)
         V_t2 = variogram(chains, i, 2)
-        rho_t1 = 1 - V_t1/(2*var[i])
-        rho_t2 = 1 - V_t2/(2*var[i])
+        rho_t1 = 1. - V_t1/(2*var[i])
+        rho_t2 = 1. - V_t2/(2*var[i])
         rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
         t = 1 # Current t
         while (t < n-2): # While t is less than the length of the chain
@@ -140,17 +145,17 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
             # Check for termination condition
             if ((t%2)==1) & ((rho_t[-1]+rho_t[-2]) < 0): # If t is odd and t
                 break
-            
+
             # Otherwise just update t
             t += 1
-        
+
         # Sum all rho upto maximum T
-        sum_rho = np.sum(rho_t[:-2])
+        
+        if t > 1:
+            sum_rho = np.sum(rho_t[:-2])
+        else:
+            sum_rho = 0
         n_eff[i] = m*n/(1+2*sum_rho)# Computed n_eff
-        # print i, sum_rho, n_eff[i]
-
-
-    return R, n_eff
 
 def variogram(chains, var_num, t_lag):
     """
@@ -163,16 +168,15 @@ def variogram(chains, var_num, t_lag):
     """
     m = len(chains)
     n = chains[0].shape[0]
-    V_t = 0
+    V_t = 0.
     for i in range(m): # For each chain
-        chain_tmp = chains[i] # Grab the chain
-        # Compute the inner sum
-        inner_sum = np.sum(np.square(chain_tmp[t_lag:, var_num]-chain_tmp[:-t_lag, var_num]))
-        # Add to the cumulative sum
-        V_t += inner_sum
+        chain_tmp = chains[i][:, var_num] # Grab the chain
+        # Compute the inner sum and add
+        V_t += np.sum(np.square(chain_tmp[t_lag:]-chain_tmp[:-t_lag]))
     V_t /= float(m*(n-t_lag))
 
     return V_t    
+ 
 
 
 def acceptance_rate(decision_chain, start=None, end=None):
