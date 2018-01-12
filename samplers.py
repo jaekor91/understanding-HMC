@@ -683,6 +683,8 @@ class HMC_sampler(sampler):
                                         save_index_table[save_index] = -1                                
 
                             #---- If the sub-trajectory is rejected, then break out of the sub-trajectory expansion.
+                                if trajectory_reject: # This is necessary.
+                                    break
                             if trajectory_reject:
                                 break
 
