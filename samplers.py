@@ -298,7 +298,8 @@ class HMC_sampler(sampler):
     """
     
     def __init__(self, D, V, dVdq, Nchain=2, Niter=1000, thin_rate=1, warm_up_num=0, \
-                 cov_p=None, sampler_type="Fixed", L=None, global_dt = True, dt=None, L_low=None, L_high=None, log2L=None, d_max=10):
+                 cov_p=None, sampler_type="Fixed", L=None, global_dt = True, dt=None, \
+                 L_low=None, L_high=None, log2L=None, d_max=10):
         """
         Args: See Sampler class constructor for other variables.
         - D: Dimensin of inference.
@@ -486,45 +487,30 @@ class HMC_sampler(sampler):
   
 
 
-    def gen_sample_NUTS(self, q_start, save_chain, verbose, first=False, first_idx_last = 10):
+    def gen_sample_NUTS(self, q_start, N_save_chain0, verbose):
         """
-        The same as *_static except trajectory length is determined by the termination condition
+        The same as *_static (no longer supported) except trajectory length is determined dynamically
         and pathological sub-trajectories are rejected (not included in the sampling).
         That is, stop expansion process if any sub-tree of the new sub-trajectory meets the termination criteria. 
-
-        - save_chain (currently not supported): If True, in addition to saving all warmed-up and thinned samples,
-        save in an array the following (only the first chain):
-        1) phi_q (Niter, L, D): The full trajectory starting with the initial.
-        2) decision_chain (Niter, 1): Whether the proposal was accepted or not.
-        - first: If true, save the first chain trajectory.
-        - first_idx_last: Number of trajectories to save for the first chain.
-
-        Note: Which point shoudl be saved can be confusing so I make a note for myself.
-        - If the trajectory terminates because the global trajecotry meets the criteria
-        then the last live_point_q_old is saved.
-        - If the trajectory terminates because NUTS sampling stops, then live_point_q_old
-        of the last trajectory expansion is saved.
+        
+        See gen_sample "args"
         """
     
-        # Check if the correct number of starting points have been        
+        #---- Param checking/variable construction before run
+        # Check if the correct number of starting points have been provided by the user.
         assert q_start.shape[0] == self.Nchain
-    
-        # if (save_chain):
-        #     assert False
-        #     self.decision_chain = np.zeros((self.Niter, 1), dtype=np.int)
-        #     self.phi_q = np.zeros((self.Niter, self.L+1, self.D), dtype=np.float)
-            # +1 because we want to count the initial AND final.
-            
-        # Variables for computing acceptance rate
-        accept_counter_warm_up = 0
-        accept_counter = 0
-        total_length = 0 # Used to compute the total amount of computation
+        if (N_save_chain0 > 0):
+            save_chain = True
+            # self.decision_chain = np.zeros((self.N_save_chain0+1, 1), dtype=np.int) # Unused feature in NUTS sampler.
+            self.phi_q = [] # List since the exact dimension is not known before the run.
+        else:
+            save_chain = False
 
-        # Arrays in which to save intermediate points
+        #---- Arrays in which to save intermediate points
         q_save = np.zeros((self.d_max+1, self.D), dtype=float)
         p_save = np.zeros((self.d_max+1, self.D), dtype=float)
         
-        # Executing HMC
+        #---- Executing HMC
         for m in xrange(self.Nchain): # For each chain
             start = time.time()   
             
@@ -737,16 +723,6 @@ class HMC_sampler(sampler):
                     d +=1
 
 
-                # # Compute final energy and save.
-                # E_final = self.E(q_tmp, p_tmp)
-                
-                # # Save Kinetic energy
-                # if i >= self.warm_up_num: # Save the right cadence of samples.
-                #     self.Eq_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = K_initial
-                #     self.E_chain[m, (i-self.warm_up_num)//self.thin_rate, 0] = E_final
-                    
-                # if (save_chain) and (m==0):
-                #     self.decision_chain[i, 0] = 1
                 if i >= self.warm_up_num: # Save the right cadence of samples.
                     self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp
                     accept_counter +=1
@@ -761,13 +737,13 @@ class HMC_sampler(sampler):
             dt = time.time() - start
             print "Time taken: %.2f\n" % dt 
 
-        print "Compute acceptance rate"
-        self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
-        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
-        print "During warm up: %.3f" % self.accept_R_warm_up
+        print "Compute acceptance rate: By default equla to 1."
+        if self.warm_up_num > 0:
+            self.accept_R_warm_up = 1.
+            print "During warm up: %.3f" % self.accept_R_warm_up            
+        self.accept_R = 1. 
         print "After warm up: %.3f" % self.accept_R
-        print "Average length: %.3f" % (total_length / float(self.Nchain * self.warm_up_num))
-        print "Complete"            
+        print "Completed."            
 
         return         
 
