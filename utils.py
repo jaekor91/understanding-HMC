@@ -133,27 +133,30 @@ def convergence_stats(q_chain, thin_rate = 5, warm_up_num = 0):
         V_t2 = variogram(chains, i, 2)
         rho_t1 = 1. - V_t1/(2*var[i])
         rho_t2 = 1. - V_t2/(2*var[i])
-        rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
-        t = 1 # Current t
-        while (t < n-2): # While t is less than the length of the chain
-            # Compute V_t and rho_t
-            V_t = variogram(chains, i, t+2)
-            rho_t.append(1 - V_t/(2*var[i]))
-
-            # Check for termination condition
-            if ((t%2)==1) & ((rho_t[-1]+rho_t[-2]) < 0): # If t is odd and t
-                break
-
-            # Otherwise just update t
-            t += 1
-
-        # Sum all rho upto maximum T
-        
-        if t > 1:
-            sum_rho = np.sum(rho_t[:-2])
-        else:
+        if (rho_t1 < 1e-2) or (rho_t1 < 1e-2):
             sum_rho = 0
+        else:
+            rho_t = [rho_t1, rho_t2]# List of autocorrelation numbers: Unknown termination number.
+            t = 1 # Current t
+            while (t < n-2): # While t is less than the length of the chain
+                # Compute V_t and rho_t
+                V_t = variogram(chains, i, t+2)
+                rho_t.append(1 - V_t/(2*var[i]))
+
+                # Check for termination condition
+                # if the sum of rho of T+1 and T+2 are negative then teriminate
+                if ((t%2)==1) & ((rho_t[t]+rho_t[t+1]) < 0): # If t is odd and t
+                    break
+
+                # Otherwise just update t
+                t += 1
+            # Sum all rho upto maximum T
+            sum_rho = np.sum(rho_t[:t])
+            if sum_rho < 0:
+                sum_rho = 0
         n_eff[i] = m*n/(1+2*sum_rho)# Computed n_eff
+
+    return R, n_eff
 
 def variogram(chains, var_num, t_lag):
     """
