@@ -867,6 +867,51 @@ class HMC_sampler(sampler):
         return 
     
     def make_slide(self, title_prefix, idx, phi_q, q_accepted, decision, q0=None, cov0=None, plot_cov=False):
+        fig, ax = plt.subplots(1, figsize=(5, 5))
+        # Plot the truth.
+        if plot_cov:
+            plot_cov_ellipse(ax, [q0], [cov0], 0, 1, MoG_color="Blue", lw=2)
+
+        # Plot all the previously accepted points
+        q1 = q_accepted[:, 0]
+        q1_min = np.percentile(q1, 2.5)
+        q1_max = np.percentile(q1, 97.5)
+        q1_range = (q1_max - q1_min) * 2.5
+        q1_center = (q1_max + q1_min)/2.
+        if q1_range < 1:
+            q1_center = 0
+            q1_range = 2
+        q1_min = q1_center - q1_range/2.
+        q1_max = q1_center + q1_range/2.
+
+        q2 = q_accepted[:, 1]
+        q2_min = np.percentile(q2, 2.5)
+        q2_max = np.percentile(q2, 97.5)
+        q2_range = (q2_max - q2_min) * 2.5
+        q2_center = (q2_max + q2_min)/2.
+        if q2_range < 1:
+            q2_center = 0
+            q2_range = 2
+        q2_min = q2_center - q2_range/2.
+        q2_max = q2_center + q2_range/2.  
+
+        ax.scatter(q1, q2, c="black", s=2, edgecolor="none")
+        ax.set_xlim([q1_min, q1_max])
+        ax.set_ylim([q2_min, q2_max])
+
+        # Plot the current trajectory
+        phi_q1 = phi_q[:, 0]
+        phi_q2 = phi_q[:, 1]
+        color = "black"
+        if decision:
+            color = "red"
+        ax.scatter(phi_q1, phi_q2, c=color, s=5, edgecolor="none")
+        ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=20, edgecolor="none")
+        ax.plot(phi_q1, phi_q2, c=color, edgecolor="none", ls="--", lw=1)        
+
+        # Save it
+        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=200)
+        plt.close()
 
         return 
 
