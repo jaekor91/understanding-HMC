@@ -523,7 +523,15 @@ class HMC_sampler(sampler):
         E_max_new_previous = 0
         pi_old = 0 # Sum of exponentials in the old trajectory divided by e^-E_max_old
         pi_new = 0 # Sum of exponentials in the new trajectory divided by e^-E_max_now (after update)
-        
+
+        #---- Index table
+        # Used to indicate where intermediate boundary points are saved q_save, p_save.
+        # Note that leftmost and rightmost boundary points are saved separately.
+        # The index table is used purely for checking sub-trajectory termination.
+        # Initially all -1. If not -1, then holds the point number m. The corresponding
+        # array index is the save index. This scheme requires manual release.
+        save_index_table = np.ones(self.d_max+1, dtype=int) * -1
+
         #---- Executing HMC
         # Report time for computing each chain.
         for m in xrange(self.Nchain): # For each chain            
@@ -560,9 +568,7 @@ class HMC_sampler(sampler):
                 # Live points from the old trajectory
                 live_point_q_old = q_tmp
                 live_point_p_old = p_tmp
-                # Live points from the new trajectory
-                live_point_q_new = None
-                live_point_p_new = None
+
                 # Left and right boundary points -- Initial point is both left and right boundary points initially.
                 left_q = q_tmp
                 left_p = -p_tmp
@@ -575,14 +581,6 @@ class HMC_sampler(sampler):
                 # Continue doubling the trajectory until termination conditions are reached.
                 left_terminate = False
                 right_terminate = False
-
-                #---- Index table
-                # Used to indicate where intermediate boundary points are saved q_save, p_save.
-                # Note that leftmost and rightmost boundary points are saved separately.
-                # The index table is used purely for checking sub-trajectory termination.
-                # Initially all -1. If not -1, then holds the point number m. The corresponding
-                # array index is the save index. This scheme requires manual release.
-                save_index_table = np.ones(self.d_max+1, dtype=int) * -1
 
                 #---- Main sampling occurs here.
                 d = 0
@@ -691,8 +689,6 @@ class HMC_sampler(sampler):
                                         save_index_table[save_index] = -1                                
 
                             #---- If the sub-trajectory is rejected, then break out of the sub-trajectory expansion.
-                                if trajectory_reject: # This is necessary.
-                                    break
                             if trajectory_reject:
                                 break
 
