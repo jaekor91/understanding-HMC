@@ -637,12 +637,11 @@ class HMC_sampler(sampler):
                             E_tmp = self.E(q_tmp, p_tmp)
                             self.N_total_steps += 1
 
-
-                            # # If the energy difference is too large then reject the trajectory.                            
-                            # if np.abs(E_tmp - E_initial) > 1000: 
-                            #     trajectory_reject = True
-                            #     q_tmp = live_point_q_old
-                            #     break
+                            # If the energy difference is too large then reject the trajectory.                            
+                            if np.abs(E_tmp - E_initial) > 1000: 
+                                trajectory_reject = True
+                                q_tmp = live_point_q_old
+                                break
 
                             # Check the termination criteria within the sub-trajectory so far.
                             if ((k+1) % 2) == 1: # If odd point, then save.
@@ -660,7 +659,6 @@ class HMC_sampler(sampler):
                                 for l in check_pts:
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)
-
                                     # ---- Debug line
                                     # print "check", k+1, l, save_index
                                     # assert save_index >= 0                                 
