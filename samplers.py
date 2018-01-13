@@ -483,7 +483,7 @@ class HMC_sampler(sampler):
         if self.warm_up_num > 0:
             self.accept_R_warm_up = accept_counter_warm_up / float(self.Nchain * self.warm_up_num)
             print "During warm up: %.3f" % self.accept_R_warm_up            
-        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num))
+        self.accept_R = accept_counter / float(self.Nchain * (self.Niter - self.warm_up_num + 1))
         print "After warm up: %.3f" % self.accept_R
         print "Completed."            
 
