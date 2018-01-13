@@ -363,18 +363,9 @@ def test_NUTS_binary_tree_flatten():
     """
     d = 5
     d_max = 10
-    D = 1
-
-    # Arrays in which to save intermediate points
-    q_save = np.zeros((d_max+1, D), dtype=float)
-    p_save = np.zeros((d_max+1, D), dtype=float)
 
     # Index table
-    # Initially all -1. If not -1, then holds the point number m. The corresponding
-    # array index is the save index. This scheme requires manual release.
     save_index_table = np.ones(d_max+1, dtype=int) * -1
-
-    trajectory_reject = False
 
     def print_line(m, save_index_table):
         print_line = "%2d: " % m
@@ -387,14 +378,9 @@ def test_NUTS_binary_tree_flatten():
         return None
 
     for m in range(2, 2**d+1):
-        # Update the trajectory
-    #     q_tmp, p_tmp = update(q_tmp, p_tmp)
-
         # Decide whether to save the point for future comparison.
         if (m % 2) == 1: # Only odd numbered points are saved.
             save_index = find_next(save_index_table)
-    #         q_save[save_index, :] = q_tmp # Current point
-    #         p_save[save_index, :] = p_tmp 
             save_index_table[save_index] = m    
             print_line(m, save_index_table)
         else:
@@ -404,20 +390,10 @@ def test_NUTS_binary_tree_flatten():
             for l in check_pts:
                 # Retrieve a previous point 
                 save_index = retrieve_save_index(save_index_table, l)
-                q_check = q_save[save_index, :] 
-                p_check = p_save[save_index, :] 
-    #             # Check termination condition
-    #             left_terminate, right_terminate = check_termination(q_check, p_check, q_tmp, p_tmp)
-    #             if left_terminate and right_terminate:
-    #                 # If the termination condition is satisfied by any subtree
-    #                 # reject the whole trajector expansion.
-    #                 trajectory_reject = True
-    #                 break 
 
                 # If the point is no longer needed, then release the space.     
                 if (l > 1) and release(m, l):
                     save_index_table[save_index] = -1
-    
 def rvs(dim=3):
     random_state = np.random
     H = np.eye(dim)
