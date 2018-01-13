@@ -532,6 +532,12 @@ class HMC_sampler(sampler):
         # array index is the save index. This scheme requires manual release.
         save_index_table = np.ones(self.d_max+1, dtype=int) * -1
 
+        #---- Check points array. Used as a cache. Instead of re-computing check points
+        # every time, this array is used to store check points corresponding to each
+        # point in the sub-trajectory.
+        check_pts_cache = np.ones((2**(self.d_max-1)+1, self.d_max)) * -1
+        idx_max = 0
+
         #---- Executing HMC
         # Report time for computing each chain.
         for m in xrange(self.Nchain): # For each chain            
@@ -654,7 +660,40 @@ class HMC_sampler(sampler):
                             else: 
                                 # Check termination conditions against each point calculated
                                 # according to the rule.
-                                check_pts = check_points_fast(k+1)
+                                #---- Start of check_points block
+                                # Calculate the idx
+                                idx = (k+1)/2
+
+                                # Compare to the max idx and proceed.
+                                if idx > idx_max:
+                                    # As long as r is not a power of two, keep subtracting the last possible power of two.
+                                    r = int(k+1)
+                                    d_last = np.floor(np.log2(r))
+                                    
+                                    while ~power_of_two_fast(r) and r>2:
+                                        d_last = np.floor(np.log2(r))
+                                        r -= int(2**d_last)
+                                        d_last -=1
+                                        
+                                    pow_tmp = np.log2(r)
+                                    start0 = (k+1)-r+1
+                                    pts = [start0]
+                                    
+                                    tmp = start0
+                                    while pow_tmp > 1:
+                                        pow_tmp-=1
+                                        tmp += int(2**(pow_tmp))
+                                        pts.append(tmp)
+                                    check_pts = np.asarray(pts)
+                                    check_pts_size = check_pts.size
+
+                                    # Update the cache
+                                    check_pts_cache[idx, 0] = check_pts_size
+                                    check_pts_cache[idx, 1:check_pts_size+1] = check_pts
+                                    idx_max +=1 # Max idx update.
+                                else:
+                                    check_pts = check_pts_cache[idx, 1:check_pts_cache[idx, 0]+1]
+                                #---- End of check points block
                                 for l in check_pts:
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)

@@ -310,31 +310,58 @@ def power_of_two_fast(r):
     # assert type(r) == int
     return np.bitwise_and(r, r-1) == 0
     
-def check_points_fast(m):
+def check_points_fast(m, check_pts_cache):
     """
+    Note: This just illustrates how the fucntion would work (not even correct!) if check_pts_cache
+    could be updated within the function. I had to use copy/paste the code directly
+    into the main function.
+
     Given the current point m, return all points against which to check
     the terminiation criteria. Assume r is even and m is type int.
+
+    Use check_pts_cache to speed up the computation.
+    - Calculate idx given m using idx = m/2. 
+    - Compare idx to idx_max. If idx <= idx_max, then use pre-computed results from cache. 
+    - Else, then compute and store the result and return.
+    - The (0, 0) element is used to store idx_max.
+    - The 0-th element is used to store the length of the check points array.
+    - When cache is requested, check_pts_cache[1:check_pts_cache[idx, 0]+1] is returned.
     """
-    # As long as r is not a power of two, keep subtracting the last possible power of two.
-    r = int(m)
-    d_last = np.floor(np.log2(r))
-    
-    while ~power_of_two_fast(r) and r>2:
+    # Calculate the idx
+    idx = m/2
+
+    # Compare to the max idx and proceed.
+    idx_max = check_pts_cache[0, 0]
+    if idx > idx_max:
+        # As long as r is not a power of two, keep subtracting the last possible power of two.
+        r = int(m)
         d_last = np.floor(np.log2(r))
-        r -= int(2**d_last)
-        d_last -=1
         
-    pow_tmp = np.log2(r)
-    start = m-r+1
-    pts = [start]
+        while ~power_of_two_fast(r) and r>2:
+            d_last = np.floor(np.log2(r))
+            r -= int(2**d_last)
+            d_last -=1
+            
+        pow_tmp = np.log2(r)
+        start = m-r+1
+        pts = [start]
+        
+        tmp = start
+        while pow_tmp > 1:
+            pow_tmp-=1
+            tmp += int(2**(pow_tmp))
+            pts.append(tmp)
+        check_pts = np.asarray(pts)
+        check_pts_size = check_pts.size
+
+        # Update the cache
+        check_pts_cache[idx+1, 0] = check_pts_size
+        check_pts_cache[idx+1, 1:check_pts_size+1] = check_pts
+        check_points_cache[0, 0] +=1 # Max idx update.
+    else:
+        check_pts = check_pts_cache[1:check_pts_cache[idx, 0]+1]
     
-    tmp = start
-    while pow_tmp > 1:
-        pow_tmp-=1
-        tmp += int(2**(pow_tmp))
-        pts.append(tmp)
-    
-    return np.asarray(pts)
+    return answer
 
 
 def release_fast(m, l):
