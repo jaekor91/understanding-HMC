@@ -673,7 +673,7 @@ class HMC_sampler(sampler):
                                     Dq_tmp = right_q_tmp - left_q_tmp
                                     
                                     right_terminate_tmp = np.dot(Dq_tmp, right_p_tmp) < 0
-                                    left_terminate_tmp = np.dot(Dq_tmp, left_p_tmp) < 0
+                                    left_terminate_tmp = np.dot(-Dq_tmp, left_p_tmp) < 0
 
                                     if left_terminate_tmp and right_terminate_tmp:
                                         # If the termination condition is satisfied by any subtree
@@ -728,7 +728,7 @@ class HMC_sampler(sampler):
                     # Check for termination condition
                     Dq = right_q - left_q
                     right_terminate = np.dot(Dq, right_p) < 0
-                    left_terminate = np.dot(Dq, left_p) < 0
+                    left_terminate = np.dot(-Dq, left_p) < 0
 
                     # Next doubling length 2**d
                     d +=1
