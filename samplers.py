@@ -535,7 +535,7 @@ class HMC_sampler(sampler):
         #---- Check points array. Used as a cache. Instead of re-computing check points
         # every time, this array is used to store check points corresponding to each
         # point in the sub-trajectory.
-        check_pts_cache = np.ones((2**(self.d_max-1)+1, self.d_max)) * -1
+        check_pts_cache = np.ones((2**(self.d_max-1)+1, self.d_max), dtype=int) * -1
         idx_max = 0
 
         #---- Executing HMC
@@ -663,7 +663,6 @@ class HMC_sampler(sampler):
                                 #---- Start of check_points block
                                 # Calculate the idx
                                 idx = (k+1)/2
-
                                 # Compare to the max idx and proceed.
                                 if idx > idx_max:
                                     # As long as r is not a power of two, keep subtracting the last possible power of two.
@@ -694,6 +693,13 @@ class HMC_sampler(sampler):
                                 else:
                                     check_pts = check_pts_cache[idx, 1:check_pts_cache[idx, 0]+1]
                                 #---- End of check points block
+                                # Debug
+                                # check_pts_original = check_points(k+1)
+                                # print check_pts
+                                # print check_pts_original
+                                # if i > 5: 
+                                #     assert False
+
                                 for l in check_pts:
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)
