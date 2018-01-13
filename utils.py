@@ -313,29 +313,16 @@ def power_of_two_fast(r):
 def check_points_fast(m):
     """
     Given the current point m, return all points against which to check
-    the terminiation criteria. Assumes m is even.
+    the terminiation criteria. Assume r is even and m is type int.
     """
-    # assert (m % 2) ==0
-    r = int(m)
     # As long as r is not a power of two, keep subtracting the last possible power of two.
+    r = int(m)
     d_last = np.floor(np.log2(r))
     
-#     #---- Debug lines
-#     counter = 0
-#     print counter
-#     print "r", r
-#     print "d_last", d_last
-#     print "\n"
-    while ~power_of_two(r) and r>2:
+    while ~power_of_two_fast(r) and r>2:
         d_last = np.floor(np.log2(r))
         r -= int(2**d_last)
         d_last -=1
-#         #---- Debug lines
-#         counter +=1
-#         print counter
-#         print "r", r
-#         print "d_last", d_last
-#         print "\n"
         
     pow_tmp = np.log2(r)
     start = m-r+1
@@ -359,7 +346,7 @@ def release_fast(m, l):
     # assert (l != 1) and (m %2) ==0 # Slow down
     r_m, r_l = int(m), int(l)
     d_last = np.floor(np.log2(r_m))
-    while ~power_of_two(r_m) and r_m>4:
+    while ~power_of_two_fast(r_m) and r_m>4:
         tmp = int(2**d_last)
         r_m -= tmp
         r_l -= tmp
