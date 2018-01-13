@@ -641,6 +641,7 @@ class HMC_sampler(sampler):
                             if np.abs(E_tmp - E_initial) > 1000: 
                                 trajectory_reject = True
                                 q_tmp = live_point_q_old
+                                print "Large energy difference instability."
                                 break
 
                             # Check the termination criteria within the sub-trajectory so far.
