@@ -83,9 +83,9 @@ class sampler(object):
         #---- Extract samples from all chains
         q_chain_tmp_1 = self.q_chain[:, :, 0].flatten()
         q_chain_tmp_2 = self.q_chain[:, :, 1].flatten()
-        E_chain_tmp = self.E_chain[:, : , :].flatten() # Only HMC samplers, so these are always defined.
+        E_chain_tmp = self.E_chain[:, 1:, :].flatten() # Only HMC samplers, so these are always defined.
         E_chain_tmp -= np.mean(E_chain_tmp)# Center the energies
-        dE_chain_tmp = self.dE_chain[:, : , :].flatten()
+        dE_chain_tmp = self.dE_chain[:, 1: , :].flatten()
         
         #---- Setting the boundary and binwidth
         # Boundary
@@ -129,9 +129,9 @@ class sampler(object):
         if plot_normal:
             assert (q0 is not None) and (cov0 is not None)
             assert q0.size == self.D
-            xgrid1 = np.arange(q1_min, q1_max, 1e-2)
+            xgrid1 = np.arange(q1_min, q1_max, dq1/10.)
             q1_marginal = multivariate_normal.pdf(xgrid1, mean=q0[0], cov=cov0[0, 0]) * self.L_chain * dq1 * self.Nchain
-            xgrid2 = np.arange(q2_min, q2_max, 1e-2)            
+            xgrid2 = np.arange(q2_min, q2_max, dq2/10.)            
             q2_marginal = multivariate_normal.pdf(xgrid2, mean=q0[1], cov=cov0[1, 1]) * self.L_chain * dq2 * self.Nchain
 
         #---- Start of the figure generation ----#
@@ -210,7 +210,7 @@ class sampler(object):
         cov_diag = [] # Inferred covariances
         for i in range(self.D):
             cov0_diag.append(cov0[i, i])
-            cov_diag.append(np.std(self.q_chain[:, :, i])**2)
+            cov_diag.append(np.std(self.q_chain[:, 1:, i])**2)
         # Converting
         cov0_diag = np.asarray(cov0_diag)
         cov_diag = np.asarray(cov_diag)        
@@ -243,7 +243,7 @@ class sampler(object):
         #---- Inferred means
         q_mean = []
         for i in range(self.D):
-            q_mean.append(np.mean(self.q_chain[:, :, i]))
+            q_mean.append(np.mean(self.q_chain[:, 1:, i]))
         q_mean = np.asarray(q_mean)
 
         # Calculate the bias
