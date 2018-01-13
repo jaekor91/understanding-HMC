@@ -562,8 +562,8 @@ class HMC_sampler(sampler):
                 right_q = q_tmp
                 right_p = p_tmp
                 # w = sum_z pi_z
-                Es_old = np.array([E_initial]) # We save all the energies
-                Es_new = None # For the new trajectory, we save all of the energies.
+                Es = np.zeros(2**self.d_max+1, dtype=float)
+                Es[0] = E_initial
 
                 # Continue doubling the trajectory until termination conditions are reached.
                 left_terminate = False
@@ -589,13 +589,11 @@ class HMC_sampler(sampler):
 
                     # Compute the length of the new sub trajectory
                     L_new_sub = 2**d
+                    E_idx_new1 = L_new_sub # The first index where energy should be saved.
 
                     # Random draw of the expansion direction.
                     # If 0, integrate forward. Else integrate backward.                    
                     u_dir = np.random.randint(low=0, high=2, size=1)[0]
-
-                    # Array for saving the energies corresponding to the new sub-trajectory
-                    Es_new = np.zeros(L_new_sub, dtype=float)
 
                     # Initial point of the new sub-trajectory
                     if u_dir == 0: # Integrate forward
@@ -605,7 +603,7 @@ class HMC_sampler(sampler):
                     self.N_total_steps += self.D
 
                     live_point_q_new, live_point_p_new = q_tmp, p_tmp
-                    Es_new[0] = self.E(q_tmp, p_tmp)
+                    Es[E_idx_new1] = self.E(q_tmp, p_tmp)
                     self.N_total_steps += 1
 
                     # Saving the initial point
@@ -632,11 +630,11 @@ class HMC_sampler(sampler):
                             E_tmp = self.E(q_tmp, p_tmp)
                             self.N_total_steps += 1                            
 
-                            # If the energy difference is too large then reject the trajectory.                            
-                            if np.abs(E_tmp - E_initial) > 1000: 
-                                trajectory_reject = True
-                                q_tmp = live_point_q_old
-                                break
+                            # # If the energy difference is too large then reject the trajectory.                            
+                            # if np.abs(E_tmp - E_initial) > 1000: 
+                            #     trajectory_reject = True
+                            #     q_tmp = live_point_q_old
+                            #     break
 
                             # Check the termination criteria within the sub-trajectory so far.
                             if ((k+1) % 2) == 1: # If odd point, then save.
@@ -692,11 +690,11 @@ class HMC_sampler(sampler):
                                 break
 
                             # If the sub-trajectory expansion is approved, then save the energy.
-                            Es_new[k] = E_tmp                                
+                            Es[E_idx_new1+k] = E_tmp                                
                             u = np.random.random() # Draw random uniform [0, 1]
-                            E_max = np.max(Es_new[:k+1])# Get the maximum energy value
-                            numerator = np.sum(np.exp(-(Es_new[:k]-E_max)))
-                            denominator = np.sum(np.exp(-(Es_new[:k+1]-E_max)))                            
+                            E_max = np.max(Es[E_idx_new1:E_idx_new1+k+1])# Get the maximum energy value
+                            numerator = np.sum(np.exp(-(Es[E_idx_new1:E_idx_new1+k]-E_max)))
+                            denominator = np.sum(np.exp(-(Es[E_idx_new1:E_idx_new1+k+1]-E_max)))                            
                             r = numerator/denominator # Compute the desired ratio.
 
                             if u > r:
@@ -716,15 +714,13 @@ class HMC_sampler(sampler):
                     # Biased trajectory sampling    
                     # - Perform a biased trajectory sampling and keep one live point. 
                     # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
-                    E_max = max(np.max(Es_new), np.max(Es_old))
-                    r = np.sum(np.exp(-(Es_new-E_max)))/np.sum(np.exp(-(Es_old-E_max)))
+                    E_max = max(np.max(Es[E_idx_new1:]), np.max(Es[:E_idx_new1]))
+                    r = np.sum(np.exp(-(Es[E_idx_new1:]-E_max)))/np.sum(np.exp(-(Es[:E_idx_new1]-E_max)))
                     A = min(1, r)
                     u = np.random.random() # Draw random uniform [0, 1]                
                     if u < A:
                         live_point_q_old = live_point_q_new
                     q_tmp = live_point_q_old
-                    Es_old = np.concatenate((Es_old, Es_new))
-                    Es_new = None
 
                     # Check for termination condition
                     Dq = right_q - left_q
