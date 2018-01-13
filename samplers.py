@@ -592,7 +592,7 @@ class HMC_sampler(sampler):
 
                     # Random draw of the expansion direction.
                     # If 0, integrate forward. Else integrate backward.                    
-                    u_dir = np.random.randint(low=0, high=2, size=1) 
+                    u_dir = np.random.randint(low=0, high=2, size=1)[0]
 
                     # Array for saving the energies corresponding to the new sub-trajectory
                     Es_new = np.zeros(L_new_sub, dtype=float)
