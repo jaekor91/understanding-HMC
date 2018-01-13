@@ -57,7 +57,8 @@ class sampler(object):
         Remember, the chain has already been warmed up and thinned.
         """
 
-        self.R_q, self.n_eff_q = convergence_stats(self.q_chain, warm_up_num=0, thin_rate=1)
+        # Note that we should not include the first point.
+        self.R_q, self.n_eff_q = convergence_stats(self.q_chain[:, 1:, :], warm_up_num=0, thin_rate=1)
         # self.R_lnL, _ = convergence_stats(self.lnL_chain, warm_up_num=0, thin_rate=1)
 
         return
@@ -747,7 +748,7 @@ class HMC_sampler(sampler):
                 print "Time taken: %.2f\n" % dt 
 
         #---- Finally tally before completion.
-        print "Compute acceptance rate: By default equla to 1."
+        print "Compute acceptance rate: By default equal to 1."
         if self.warm_up_num > 0:
             self.accept_R_warm_up = 1.
             print "During warm up: %.3f" % self.accept_R_warm_up            
