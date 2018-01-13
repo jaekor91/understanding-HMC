@@ -516,6 +516,9 @@ class HMC_sampler(sampler):
         #---- Arrays in which to save intermediate points
         q_save = np.zeros((self.d_max+1, self.D), dtype=float)
         p_save = np.zeros((self.d_max+1, self.D), dtype=float)
+
+        #---- Array for the energies
+        Es = np.zeros(2**self.d_max+1, dtype=float)
         
         #---- Executing HMC
         # Report time for computing each chain.
@@ -562,7 +565,7 @@ class HMC_sampler(sampler):
                 right_q = q_tmp
                 right_p = p_tmp
                 # w = sum_z pi_z
-                Es = np.zeros(2**self.d_max+1, dtype=float)
+                Es[:] = 0
                 Es[0] = E_initial
 
                 # Continue doubling the trajectory until termination conditions are reached.
