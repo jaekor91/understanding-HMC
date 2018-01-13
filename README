@@ -1,11 +1,25 @@
 This is documentation for a little project to understand HMC for inference with a fixed dimensionality.
 
 /---- Contents
+- Lessons learned
 - Design and goals
 - Main modules
 - Case studies
 - Notes for the future
 
+
+
+
+
+/---- Lessons learned
+These are conclusions drawn from the below study.
+- NUTS vs. Random trajectory lengths: My exploration of NUTS algorithm did not conclusively show that it is better than the other sampler. Random sampler has three parameters to tune [L_low, L_high] and dt whereas NUTS only has one, dt. On the outset it may seem like NUTS should be easier to use. I didn't find that to be the case. Here are some general observations. 
+1) Both samplers produce independent samples at each step (ESS ~ Total Nsample) *if properly tuned*.
+2) NUTS sampler often terminates prematurely in high-covariance cases, making shorter steps compared to the random sampler. NUTS sampler then progresses slowly compared to the other. 
+3) NUTS sampler takes long sojourns when the target distribution does not exhibit large covariance. In order to make the journey happen in a shorter amount of compute time dt has to be increased. 
+4) For PCAT, we want to set a single step size on the outset and keep it fixed. The random sampler may waste a lot of computation retracing its own trajectories but the payoff is longer travel in general.
+5) Burn-in: I also find that NUTS may exhibit worse burn-in.
+6) If properly tune, NUTS's (# of expensive computations) / (effective sample) can be much larger, mostly, for low covariance cases.
 
 
 
