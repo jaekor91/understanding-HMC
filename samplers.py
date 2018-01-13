@@ -697,11 +697,11 @@ class HMC_sampler(sampler):
                             Es[E_idx_new1+k] = E_tmp                                
                             u = np.random.random() # Draw random uniform [0, 1]
                             E_max = np.max(Es[E_idx_new1:E_idx_new1+k+1])# Get the maximum energy value
-                            numerator = np.sum(np.exp(-(Es[E_idx_new1:E_idx_new1+k]-E_max)))
+                            numerator = np.sum(np.exp(-(E_tmp-E_max)))
                             denominator = np.sum(np.exp(-(Es[E_idx_new1:E_idx_new1+k+1]-E_max)))                            
                             r = numerator/denominator # Compute the desired ratio.
 
-                            if u > r:
+                            if u < r:
                                 # Update the live point.
                                 live_point_q_new, live_point_p_new = q_tmp, p_tmp
                     
@@ -718,8 +718,8 @@ class HMC_sampler(sampler):
                     # Biased trajectory sampling    
                     # - Perform a biased trajectory sampling and keep one live point. 
                     # - Bernouli sampling with min(1, w_new/w_old) for the new trajectory. 
-                    E_max = max(np.max(Es[E_idx_new1:]), np.max(Es[:E_idx_new1]))
-                    r = np.sum(np.exp(-(Es[E_idx_new1:]-E_max)))/np.sum(np.exp(-(Es[:E_idx_new1]-E_max)))
+                    E_max = max(np.max(Es[E_idx_new1:E_idx_new1+L_new_sub]), np.max(Es[:E_idx_new1]))
+                    r = np.sum(np.exp(-(Es[E_idx_new1:E_idx_new1+L_new_sub]-E_max)))/np.sum(np.exp(-(Es[:E_idx_new1]-E_max)))
                     A = min(1, r)
                     u = np.random.random() # Draw random uniform [0, 1]                
                     if u < A:
