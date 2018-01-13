@@ -654,7 +654,7 @@ class HMC_sampler(sampler):
                             else: 
                                 # Check termination conditions against each point calculated
                                 # according to the rule.
-                                check_pts = check_points(k+1)
+                                check_pts = check_points_fast(k+1)
                                 for l in check_pts:
                                     # Retrieve a previous points
                                     save_index = retrieve_save_index(save_index_table, l)
@@ -685,7 +685,7 @@ class HMC_sampler(sampler):
                                         break 
 
                                     # If the point is no longer needed, then release the space.     
-                                    if (l>1) and release(k+1, l):
+                                    if (l>1) and release_fast(k+1, l):
                                         save_index_table[save_index] = -1                                
 
                             #---- If the sub-trajectory is rejected, then break out of the sub-trajectory expansion.

@@ -303,6 +303,73 @@ def release(m, l):
     else:
         return False
 
+def power_of_two_fast(r):
+    """
+    Return True if r is power of two, False otherwise.
+    """
+    # assert type(r) == int
+    return np.bitwise_and(r, r-1) == 0
+    
+def check_points_fast(m):
+    """
+    Given the current point m, return all points against which to check
+    the terminiation criteria. Assumes m is even.
+    """
+    # assert (m % 2) ==0
+    r = int(m)
+    # As long as r is not a power of two, keep subtracting the last possible power of two.
+    d_last = np.floor(np.log2(r))
+    
+#     #---- Debug lines
+#     counter = 0
+#     print counter
+#     print "r", r
+#     print "d_last", d_last
+#     print "\n"
+    while ~power_of_two(r) and r>2:
+        d_last = np.floor(np.log2(r))
+        r -= int(2**d_last)
+        d_last -=1
+#         #---- Debug lines
+#         counter +=1
+#         print counter
+#         print "r", r
+#         print "d_last", d_last
+#         print "\n"
+        
+    pow_tmp = np.log2(r)
+    start = m-r+1
+    pts = [start]
+    
+    tmp = start
+    while pow_tmp > 1:
+        pow_tmp-=1
+        tmp += int(2**(pow_tmp))
+        pts.append(tmp)
+    
+    return np.asarray(pts)
+
+
+def release_fast(m, l):
+    """
+    Given the current point m and that the termination condition was
+    checked against l, return True if the point should no longer be saved.
+    Return False, otherwise.
+    """
+    # assert (l != 1) and (m %2) ==0 # Slow down
+    r_m, r_l = int(m), int(l)
+    d_last = np.floor(np.log2(r_m))
+    while ~power_of_two(r_m) and r_m>4:
+        tmp = int(2**d_last)
+        r_m -= tmp
+        r_l -= tmp
+        d_last = np.floor(np.log2(r_m))        
+    
+    if (r_m >= 4) and (r_l>1):
+        return True
+    else:
+        return False
+
 def test_NUTS_binary_tree_flatten():
     """
     Code used to test whether the auxilary functions are working well.
