@@ -662,39 +662,39 @@ class HMC_sampler(sampler):
                                 # according to the rule.
                                 #---- Start of check_points block
                                 # Calculate the idx
-                                idx = (k+1)/2
-                                # Compare to the max idx and proceed.
-                                if idx > idx_max:
-                                    # As long as r is not a power of two, keep subtracting the last possible power of two.
-                                    r = int(k+1)
-                                    d_last = np.floor(np.log2(r))
+                                # idx = (k+1)/2
+                                # # Compare to the max idx and proceed.
+                                # if idx > idx_max:
+                                #     # As long as r is not a power of two, keep subtracting the last possible power of two.
+                                #     r = int(k+1)
+                                #     d_last = np.floor(np.log2(r))
                                     
-                                    while ~power_of_two_fast(r) and r>2:
-                                        d_last = np.floor(np.log2(r))
-                                        r -= int(2**d_last)
-                                        d_last -=1
+                                #     while ~power_of_two_fast(r) and r>2:
+                                #         d_last = np.floor(np.log2(r))
+                                #         r -= int(2**d_last)
+                                #         d_last -=1
                                         
-                                    pow_tmp = np.log2(r)
-                                    start0 = (k+1)-r+1
-                                    pts = [start0]
+                                #     pow_tmp = np.log2(r)
+                                #     start0 = (k+1)-r+1
+                                #     pts = [start0]
                                     
-                                    tmp = start0
-                                    while pow_tmp > 1:
-                                        pow_tmp-=1
-                                        tmp += int(2**(pow_tmp))
-                                        pts.append(tmp)
-                                    check_pts = np.asarray(pts)
-                                    check_pts_size = check_pts.size
+                                #     tmp = start0
+                                #     while pow_tmp > 1:
+                                #         pow_tmp-=1
+                                #         tmp += int(2**(pow_tmp))
+                                #         pts.append(tmp)
+                                #     check_pts = np.asarray(pts)
+                                #     check_pts_size = check_pts.size
 
-                                    # Update the cache
-                                    check_pts_cache[idx, 0] = check_pts_size
-                                    check_pts_cache[idx, 1:check_pts_size+1] = check_pts
-                                    idx_max +=1 # Max idx update.
-                                else:
-                                    check_pts = check_pts_cache[idx, 1:check_pts_cache[idx, 0]+1]
+                                #     # Update the cache
+                                #     check_pts_cache[idx, 0] = check_pts_size
+                                #     check_pts_cache[idx, 1:check_pts_size+1] = check_pts
+                                #     idx_max +=1 # Max idx update.
+                                # else:
+                                #     check_pts = check_pts_cache[idx, 1:check_pts_cache[idx, 0]+1]
                                 #---- End of check points block
                                 # Debug
-                                # check_pts_original = check_points(k+1)
+                                check_pts = check_points(k+1)
                                 # print check_pts
                                 # print check_pts_original
                                 # if i > 5: 
