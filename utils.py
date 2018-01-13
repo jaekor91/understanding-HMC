@@ -310,31 +310,58 @@ def power_of_two_fast(r):
     # assert type(r) == int
     return np.bitwise_and(r, r-1) == 0
     
-def check_points_fast(m):
+def check_points_fast(m, check_pts_cache):
     """
+    Note: This just illustrates how the fucntion would work (not even correct!) if check_pts_cache
+    could be updated within the function. I had to use copy/paste the code directly
+    into the main function.
+
     Given the current point m, return all points against which to check
     the terminiation criteria. Assume r is even and m is type int.
+
+    Use check_pts_cache to speed up the computation.
+    - Calculate idx given m using idx = m/2. 
+    - Compare idx to idx_max. If idx <= idx_max, then use pre-computed results from cache. 
+    - Else, then compute and store the result and return.
+    - The (0, 0) element is used to store idx_max.
+    - The 0-th element is used to store the length of the check points array.
+    - When cache is requested, check_pts_cache[1:check_pts_cache[idx, 0]+1] is returned.
     """
-    # As long as r is not a power of two, keep subtracting the last possible power of two.
-    r = int(m)
-    d_last = np.floor(np.log2(r))
-    
-    while ~power_of_two_fast(r) and r>2:
+    # Calculate the idx
+    idx = m/2
+
+    # Compare to the max idx and proceed.
+    idx_max = check_pts_cache[0, 0]
+    if idx > idx_max:
+        # As long as r is not a power of two, keep subtracting the last possible power of two.
+        r = int(m)
         d_last = np.floor(np.log2(r))
-        r -= int(2**d_last)
-        d_last -=1
         
-    pow_tmp = np.log2(r)
-    start = m-r+1
-    pts = [start]
+        while ~power_of_two_fast(r) and r>2:
+            d_last = np.floor(np.log2(r))
+            r -= int(2**d_last)
+            d_last -=1
+            
+        pow_tmp = np.log2(r)
+        start = m-r+1
+        pts = [start]
+        
+        tmp = start
+        while pow_tmp > 1:
+            pow_tmp-=1
+            tmp += int(2**(pow_tmp))
+            pts.append(tmp)
+        check_pts = np.asarray(pts)
+        check_pts_size = check_pts.size
+
+        # Update the cache
+        check_pts_cache[idx+1, 0] = check_pts_size
+        check_pts_cache[idx+1, 1:check_pts_size+1] = check_pts
+        check_points_cache[0, 0] +=1 # Max idx update.
+    else:
+        check_pts = check_pts_cache[1:check_pts_cache[idx, 0]+1]
     
-    tmp = start
-    while pow_tmp > 1:
-        pow_tmp-=1
-        tmp += int(2**(pow_tmp))
-        pts.append(tmp)
-    
-    return np.asarray(pts)
+    return answer
 
 
 def release_fast(m, l):
@@ -363,18 +390,9 @@ def test_NUTS_binary_tree_flatten():
     """
     d = 5
     d_max = 10
-    D = 1
-
-    # Arrays in which to save intermediate points
-    q_save = np.zeros((d_max+1, D), dtype=float)
-    p_save = np.zeros((d_max+1, D), dtype=float)
 
     # Index table
-    # Initially all -1. If not -1, then holds the point number m. The corresponding
-    # array index is the save index. This scheme requires manual release.
     save_index_table = np.ones(d_max+1, dtype=int) * -1
-
-    trajectory_reject = False
 
     def print_line(m, save_index_table):
         print_line = "%2d: " % m
@@ -387,14 +405,9 @@ def test_NUTS_binary_tree_flatten():
         return None
 
     for m in range(2, 2**d+1):
-        # Update the trajectory
-    #     q_tmp, p_tmp = update(q_tmp, p_tmp)
-
         # Decide whether to save the point for future comparison.
         if (m % 2) == 1: # Only odd numbered points are saved.
             save_index = find_next(save_index_table)
-    #         q_save[save_index, :] = q_tmp # Current point
-    #         p_save[save_index, :] = p_tmp 
             save_index_table[save_index] = m    
             print_line(m, save_index_table)
         else:
@@ -404,20 +417,10 @@ def test_NUTS_binary_tree_flatten():
             for l in check_pts:
                 # Retrieve a previous point 
                 save_index = retrieve_save_index(save_index_table, l)
-                q_check = q_save[save_index, :] 
-                p_check = p_save[save_index, :] 
-    #             # Check termination condition
-    #             left_terminate, right_terminate = check_termination(q_check, p_check, q_tmp, p_tmp)
-    #             if left_terminate and right_terminate:
-    #                 # If the termination condition is satisfied by any subtree
-    #                 # reject the whole trajector expansion.
-    #                 trajectory_reject = True
-    #                 break 
 
                 # If the point is no longer needed, then release the space.     
                 if (l > 1) and release(m, l):
                     save_index_table[save_index] = -1
-    
 def rvs(dim=3):
     random_state = np.random
     H = np.eye(dim)
