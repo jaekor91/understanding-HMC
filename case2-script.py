@@ -56,6 +56,9 @@ print "Min/Max of marginal variances: %.3f, %.3f" % (np.min(cov0_diag), np.max(c
 # Starting points
 cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
+q_start[0, :] = 0
+q_start[0, 0] = 1000
+q_start[0, 1] = -1000
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
@@ -63,7 +66,7 @@ HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random"
 HMC1.gen_sample(q_start, N_save_chain0 = N_save_chain0)
 HMC1.compute_convergence_stats()
 HMC1.plot_samples(title_prefix=title_str, savefig=True, show=False, plot_normal=True, q0=q0, cov0=cov0)
-HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-300, qmax=300)
+HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-1100, qmax=1100)
 
 print "Random"
 print "Total number of samples: %d" % ((HMC1.L_chain-1) * HMC1.Nchain)
@@ -113,6 +116,9 @@ print "Min/Max of marginal variances: %.3f, %.3f" % (np.min(cov0_diag), np.max(c
 # Starting points
 cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
+q_start[0, :] = 0
+q_start[0, 0] = 1000
+q_start[0, 1] = -1000
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
@@ -120,7 +126,7 @@ HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random"
 HMC1.gen_sample(q_start, N_save_chain0 = N_save_chain0)
 HMC1.compute_convergence_stats()
 HMC1.plot_samples(title_prefix=title_str, savefig=True, show=False, plot_normal=True, q0=q0, cov0=cov0)
-HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-300, qmax=300)
+HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-1100, qmax=1100)
 
 print "Random"
 print "Total number of samples: %d" % ((HMC1.L_chain-1) * HMC1.Nchain)
@@ -170,6 +176,9 @@ print "Min/Max of marginal variances: %.3f, %.3f" % (np.min(cov0_diag), np.max(c
 # Starting points
 cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
+q_start[0, :] = 0
+q_start[0, 0] = 1000
+q_start[0, 1] = -1000
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
@@ -177,7 +186,7 @@ HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random"
 HMC1.gen_sample(q_start, N_save_chain0 = N_save_chain0)
 HMC1.compute_convergence_stats()
 HMC1.plot_samples(title_prefix=title_str, savefig=True, show=False, plot_normal=True, q0=q0, cov0=cov0)
-HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-300, qmax=300)
+HMC1.make_movie(title_prefix=title_str, q0=q0, cov0=cov0, plot_cov=True, qmin=-1100, qmax=1100)
 
 print "Random"
 print "Total number of samples: %d" % ((HMC1.L_chain-1) * HMC1.Nchain)

@@ -87,7 +87,8 @@ For all options, it should be possible to specify the momentum distribution and 
 
 
 - Case study 2: Unit multi-variate normal of dimensionality [2, 10, 100] with bad starting point
-	- Hyper-parameters: Single time step, starting distribution with 100 * I
+	- Hyper-parameters: Single time step, starting distribution with 100 * I. 
+	The first one get extra large starting point for illustration purposes.
 	- Common: dt=1e-1, L_low=5, L_high=20
 	- Script used: case2-script.py
 	- case-2a:
