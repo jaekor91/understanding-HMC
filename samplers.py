@@ -910,9 +910,9 @@ class HMC_sampler(sampler):
         color = "black"
         if decision:
             color = "red"
-        ax.scatter(phi_q1, phi_q2, s=10, edgecolor="none", c=color)
+        ax.scatter(phi_q1, phi_q2, s=5, edgecolor="none", c=color)
         ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=30, edgecolor="")
-        ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=1)        
+        ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=0.5)
 
         ax.set_xlim([qmin, qmax])
         ax.set_ylim([qmin, qmax])        
