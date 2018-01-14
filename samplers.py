@@ -918,7 +918,7 @@ class HMC_sampler(sampler):
         ax.set_ylim([qmin, qmax])        
 
         # Save it
-        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=150)
+        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=200)
         plt.close()
 
         return 
