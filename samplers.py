@@ -396,7 +396,7 @@ class HMC_sampler(sampler):
         assert q_start.shape[0] == self.Nchain
         if (N_save_chain0 > 0):
             save_chain = True
-            self.decision_chain = np.zeros((self.N_save_chain0+1, 1), dtype=np.int)
+            self.decision_chain = np.zeros((N_save_chain0+1, 1), dtype=np.int)
             self.phi_q = [] # List since the exact dimension is not known before the run.
         else:
             save_chain = False
@@ -462,7 +462,6 @@ class HMC_sampler(sampler):
                 if (dE < 0) or (lnu < -dE): # If accepted.
                     if save_chain and (m==0) and (i<(N_save_chain0+1)):
                         self.decision_chain[i, 0] = 1
-                        self.phi_q.append(phi_q_tmp)
                     if i >= self.warm_up_num: # Save the right cadence of samples.
                         self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
                         accept_counter +=1                            
@@ -471,6 +470,9 @@ class HMC_sampler(sampler):
                 else: # Otherwise, proposal rejected.
                     self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial # save the old point
                     q_tmp = q_initial
+
+                if save_chain and (m==0) and (i<(N_save_chain0+1)):                    
+                    self.phi_q.append(phi_q_tmp)
             
             #---- Finish measuring time
             if verbose:
@@ -838,7 +840,7 @@ class HMC_sampler(sampler):
     
 
     
-    def make_movie(self, title_prefix, q0=None, cov0=None, plot_cov=True):
+    def make_movie(self, title_prefix, q0=None, cov0=None, plot_cov=True, qmin=-4, qmax=4):
         """
         Creates a deck of png files that can be turned into a movie.
         
@@ -856,48 +858,51 @@ class HMC_sampler(sampler):
         idx = 0
         for i in range(len(self.phi_q)): # For each iteration.
             phi_q_tmp = self.phi_q[i] # Grab the trajectory.
-            phi_q_tmp_len = phi_q_tmp.size # Length of the trajectory.
-            decision = self.decision_chain[i]
+            phi_q_tmp_len = phi_q_tmp.shape[0] # Length of the trajectory.
+            decision = self.decision_chain[i+1]
             for j in range(phi_q_tmp_len): # For each point in the trajectory, make a slide.
-                self.make_slide(title_prefix, idx, phi_q_tmp[:j+1], q_accepted[:i,:], decision, q0, cov0, plot_cov)
+                if (idx % 10)==0:
+                    print "Working on slide %d" % idx
+                self.make_slide(title_prefix, idx, phi_q_tmp[:j+1], q_accepted[:i,:], decision, q0, cov0, plot_cov, \
+                    qmin=qmin, qmax=qmax)
                 idx += 1 # Increment the index every time 
 
         print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-slide-%%d.png -vcodec mpeg4 -y %s-movie.mp4"  % (title_prefix, title_prefix)
         
         return 
     
-    def make_slide(self, title_prefix, idx, phi_q, q_accepted, decision, q0=None, cov0=None, plot_cov=False):
+    def make_slide(self, title_prefix, idx, phi_q, q_accepted, decision, q0=None, cov0=None, \
+        plot_cov=False, qmin=-4, qmax=4):
         fig, ax = plt.subplots(1, figsize=(5, 5))
         # Plot the truth.
         if plot_cov:
-            plot_cov_ellipse(ax, [q0], [cov0], 0, 1, MoG_color="Blue", lw=2)
+            plot_cov_ellipse(ax, [q0], [cov0], 0, 1, MoG_color="Blue", lw=1.)
 
         # Plot all the previously accepted points
-        q1 = q_accepted[:, 0]
-        q1_min = np.percentile(q1, 2.5)
-        q1_max = np.percentile(q1, 97.5)
-        q1_range = (q1_max - q1_min) * 2.5
-        q1_center = (q1_max + q1_min)/2.
-        if q1_range < 1:
-            q1_center = 0
-            q1_range = 2
-        q1_min = q1_center - q1_range/2.
-        q1_max = q1_center + q1_range/2.
+        if q_accepted.shape[0] > 0:
+            q1 = q_accepted[:, 0]
+            q2 = q_accepted[:, 1]
 
-        q2 = q_accepted[:, 1]
-        q2_min = np.percentile(q2, 2.5)
-        q2_max = np.percentile(q2, 97.5)
-        q2_range = (q2_max - q2_min) * 2.5
-        q2_center = (q2_max + q2_min)/2.
-        if q2_range < 1:
-            q2_center = 0
-            q2_range = 2
-        q2_min = q2_center - q2_range/2.
-        q2_max = q2_center + q2_range/2.  
+            # q1_min = np.percentile(q1, 2.5)
+            # q1_max = np.percentile(q1, 97.5)
+            # q1_range = (q1_max - q1_min) * 2.5
+            # q1_center = (q1_max + q1_min)/2.
+            # if q1_range < 1:
+            #     q1_center = 0
+            #     q1_range = 2
+            # q1_min = q1_center - q1_range/2.
+            # q1_max = q1_center + q1_range/2.
 
-        ax.scatter(q1, q2, c="black", s=2, edgecolor="none")
-        ax.set_xlim([q1_min, q1_max])
-        ax.set_ylim([q2_min, q2_max])
+            # q2_min = np.percentile(q2, 2.5)
+            # q2_max = np.percentile(q2, 97.5)
+            # q2_range = (q2_max - q2_min) * 2.5
+            # q2_center = (q2_max + q2_min)/2.
+            # if q2_range < 1:
+            #     q2_center = 0
+            #     q2_range = 2
+            # q2_min = q2_center - q2_range/2.
+            # q2_max = q2_center + q2_range/2.  
+            ax.scatter(q1, q2, c="black", s=10, edgecolor="none")
 
         # Plot the current trajectory
         phi_q1 = phi_q[:, 0]
@@ -905,12 +910,15 @@ class HMC_sampler(sampler):
         color = "black"
         if decision:
             color = "red"
-        ax.scatter(phi_q1, phi_q2, c=color, s=5, edgecolor="none")
+        ax.scatter(phi_q1, phi_q2, c=color, s=10, edgecolor="none")
         ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=20, edgecolor="none")
-        ax.plot(phi_q1, phi_q2, c=color, edgecolor="none", ls="--", lw=1)        
+        ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=1)        
+
+        ax.set_xlim([qmin, qmax])
+        ax.set_ylim([qmin, qmax])        
 
         # Save it
-        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=200)
+        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=100)
         plt.close()
 
         return 
