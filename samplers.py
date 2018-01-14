@@ -859,7 +859,7 @@ class HMC_sampler(sampler):
         for i in range(len(self.phi_q)): # For each iteration.
             phi_q_tmp = self.phi_q[i] # Grab the trajectory.
             phi_q_tmp_len = phi_q_tmp.shape[0] # Length of the trajectory.
-            decision = self.decision_chain[i+1]
+            decision = self.decision_chain[i]
             for j in range(phi_q_tmp_len): # For each point in the trajectory, make a slide.
                 if (idx % 100)==0:
                     print "Working on slide %d" % idx
@@ -910,8 +910,8 @@ class HMC_sampler(sampler):
         color = "black"
         if decision:
             color = "red"
-        ax.scatter(phi_q1, phi_q2, c=color, s=10, edgecolor="none")
-        ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=20, edgecolor="none")
+        ax.scatter(phi_q1, phi_q2, s=5, edgecolor=color, facecolors="none")
+        ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=30, edgecolor="")
         ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=1)        
 
         ax.set_xlim([qmin, qmax])
