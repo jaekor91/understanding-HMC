@@ -284,8 +284,8 @@ class sampler(object):
 
         plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=ft_size_title)
         if savefig:
-            fname = title_prefix+"samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
-            plt.savefig(fname, dpi=100, bbox_inches = "tight")
+            fname = title_prefix+"-samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
+            plt.savefig(fname, dpi=400, bbox_inches = "tight")
         if show:
             plt.show()
         plt.close()
@@ -910,7 +910,7 @@ class HMC_sampler(sampler):
         color = "black"
         if decision:
             color = "red"
-        ax.scatter(phi_q1, phi_q2, s=5, edgecolor=color, facecolors="none")
+        ax.scatter(phi_q1, phi_q2, s=10, edgecolor="none", c=color)
         ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=30, edgecolor="")
         ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=1)        
 
