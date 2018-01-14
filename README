@@ -146,17 +146,31 @@ For all options, it should be possible to specify the momentum distribution and 
 		- D=100
 		- Video and summary plots.
 
-- Case study 6: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 5: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.999
+	- Hyper-parameters: Single time step, starting distribution with 100 * I. Challenging burn-in
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case6-script.py
+	- case-6a:
+		- D=2
+		- Video and summary plots.
+	- case-6b:
+		- D=10
+		- Video and summary plots.
+	- case-6c:
+		- D=100
+		- Video and summary plots.		
+
+- Case study 7: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Single time step, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Case study 7: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 8: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
 
-- Case study 8: Multi-variate normal of dimensionality [2, 10, 100] with random variance
+- Case study 9: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Time step of each dimension matches its standard deviation, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
 	- Video: Yes
