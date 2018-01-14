@@ -461,7 +461,7 @@ class HMC_sampler(sampler):
                 lnu = np.log(np.random.random(1))        
                 if (dE < 0) or (lnu < -dE): # If accepted.
                     if save_chain and (m==0) and (i<(N_save_chain0+1)):
-                        self.decision_chain[i, 0] = 1
+                        self.decision_chain[i-1, 0] = 1
                     if i >= self.warm_up_num: # Save the right cadence of samples.
                         self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
                         accept_counter +=1                            
@@ -840,7 +840,7 @@ class HMC_sampler(sampler):
     
 
     
-    def make_movie(self, title_prefix, q0=None, cov0=None, plot_cov=True, qmin=-4, qmax=4):
+    def make_movie(self, title_prefix, q0=None, cov0=None, plot_cov=True, qmin=-3, qmax=3):
         """
         Creates a deck of png files that can be turned into a movie.
         
@@ -861,7 +861,7 @@ class HMC_sampler(sampler):
             phi_q_tmp_len = phi_q_tmp.shape[0] # Length of the trajectory.
             decision = self.decision_chain[i+1]
             for j in range(phi_q_tmp_len): # For each point in the trajectory, make a slide.
-                if (idx % 10)==0:
+                if (idx % 100)==0:
                     print "Working on slide %d" % idx
                 self.make_slide(title_prefix, idx, phi_q_tmp[:j+1], q_accepted[:i,:], decision, q0, cov0, plot_cov, \
                     qmin=qmin, qmax=qmax)
@@ -872,7 +872,7 @@ class HMC_sampler(sampler):
         return 
     
     def make_slide(self, title_prefix, idx, phi_q, q_accepted, decision, q0=None, cov0=None, \
-        plot_cov=False, qmin=-4, qmax=4):
+        plot_cov=False, qmin=-3, qmax=3):
         fig, ax = plt.subplots(1, figsize=(5, 5))
         # Plot the truth.
         if plot_cov:
@@ -918,7 +918,7 @@ class HMC_sampler(sampler):
         ax.set_ylim([qmin, qmax])        
 
         # Save it
-        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=100)
+        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=150)
         plt.close()
 
         return 
