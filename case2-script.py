@@ -58,7 +58,7 @@ cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
 q_start[0, :] = 0
 q_start[0, 0] = 1000
-q_start[0, 1] = -1000
+q_start[0, 1] = -750
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
@@ -118,7 +118,7 @@ cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
 q_start[0, :] = 0
 q_start[0, 0] = 1000
-q_start[0, 1] = -1000
+q_start[0, 1] = -750
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
@@ -178,7 +178,7 @@ cov_start = np.diag(np.ones(D)) * 100
 q_start = start_pts(q0, cov_start, Nchain)
 q_start[0, :] = 0
 q_start[0, 0] = 1000
-q_start[0, 1] = -1000
+q_start[0, 1] = -750
 
 # --- Random trajectory length ---- #
 HMC1 = HMC_sampler(D, V, dVdq, Niter=Niter, Nchain=Nchain, sampler_type="Random", L_low=L_low, \
