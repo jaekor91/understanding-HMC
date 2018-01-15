@@ -284,8 +284,8 @@ class sampler(object):
 
         plt.suptitle("D/Nchain/Niter/Warm-up/Thin = %d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=ft_size_title)
         if savefig:
-            fname = title_prefix+"samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
-            plt.savefig(fname, dpi=100, bbox_inches = "tight")
+            fname = title_prefix+"-samples-D%d-Nchain%d-Niter%d-Warm%d-Thin%d.png" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate)
+            plt.savefig(fname, dpi=400, bbox_inches = "tight")
         if show:
             plt.show()
         plt.close()
@@ -396,7 +396,7 @@ class HMC_sampler(sampler):
         assert q_start.shape[0] == self.Nchain
         if (N_save_chain0 > 0):
             save_chain = True
-            self.decision_chain = np.zeros((self.N_save_chain0+1, 1), dtype=np.int)
+            self.decision_chain = np.zeros((N_save_chain0+1, 1), dtype=np.int)
             self.phi_q = [] # List since the exact dimension is not known before the run.
         else:
             save_chain = False
@@ -441,15 +441,15 @@ class HMC_sampler(sampler):
                 L_random = np.random.randint(low=self.L_low, high=self.L_high, size=1)[0]
                 if save_chain and (m==0) and (i<(N_save_chain0+1)):
                     # Construct an array of length L_random+1 and save the initial point at 0.
-                    phi_q_tmp = np.zeros((L_random+1, self.D))
-                    phi_q_tmp[0, :] = q_tmp
+                    phi_q_tmp = np.zeros((L_random+1, 2))
+                    phi_q_tmp[0, :] = q_tmp[:2]
 
                 # Take leap frog steps
                 for l in xrange(1, L_random+1):
                     p_tmp, q_tmp = self.leap_frog(p_tmp, q_tmp)
                     self.N_total_steps += L_random * self.D                    
                     if save_chain and (m==0) and (i<(N_save_chain0+1)):
-                        phi_q_tmp[l, :] = q_tmp
+                        phi_q_tmp[l, :] = q_tmp[:2]
 
                 # Compute final energy and save.
                 E_final = self.E(q_tmp, p_tmp)
@@ -461,8 +461,7 @@ class HMC_sampler(sampler):
                 lnu = np.log(np.random.random(1))        
                 if (dE < 0) or (lnu < -dE): # If accepted.
                     if save_chain and (m==0) and (i<(N_save_chain0+1)):
-                        self.decision_chain[i, 0] = 1
-                        self.phi_q.append(phi_q_tmp)
+                        self.decision_chain[i-1, 0] = 1
                     if i >= self.warm_up_num: # Save the right cadence of samples.
                         self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_tmp # save the new point
                         accept_counter +=1                            
@@ -471,6 +470,9 @@ class HMC_sampler(sampler):
                 else: # Otherwise, proposal rejected.
                     self.q_chain[m, (i-self.warm_up_num)//self.thin_rate, :] = q_initial # save the old point
                     q_tmp = q_initial
+
+                if save_chain and (m==0) and (i<(N_save_chain0+1)):                    
+                    self.phi_q.append(phi_q_tmp)
             
             #---- Finish measuring time
             if verbose:
@@ -838,142 +840,88 @@ class HMC_sampler(sampler):
     
 
     
-    def make_movie(self, T_last=-1, warm_up=False, fname_prefix="test-HMC", dx =0.1, xmax=4, plot_normal=True, q0=None, cov0=False, plot_cov=True):
+    def make_movie(self, title_prefix, q0=None, cov0=None, plot_cov=True, qmin=-3, qmax=3):
         """
         Creates a deck of png files that can be turned into a movie.
         
         Note each slide is indexed by the iteration number, i, and
         the time step number l = 0, ..., L. 
-        
-        Args:
-        - T_last: The duration of the movie in units of MH step. 
-        If T_last exceeds the total number of steps, then maximum is used.
-        - warm_up: If True, start making the movie after the warm-up fraction.
         """
-        
-        # Setting the beginning and the final index.
-        if warm_up:
-            idx_start = self.warm_up_num
-        else:
-            idx_start = 0
-            
-        if T_last > self.Niter:
-            idx_last = self.Niter
-        else:
-            idx_last = T_last
-            
-        # Make a movie
-        counter = 0
-        for i in xrange(idx_start, idx_last):
-            for l in xrange(0, self.L+1): # For each iteration, plot the whole trajectory.
-                idx_slide = (i-idx_start) * (self.L+1) + l                
-                self.make_slide(fname_prefix, idx_start, i, l, idx_slide, plot_normal=plot_normal, q0=q0, cov0=cov0, plot_cov=plot_cov, Ntotal=(idx_last-idx_start+1), xmax=xmax, dx=dx)
-                if (counter % 10) == 0:
-                    print "%d: Making slide (%d, %d)" % (counter, i, l)
-                counter +=1
-        # Command for creating and movies and deleting slides.
-        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-%%d.png -vcodec mpeg4 -y %s-movie.mp4"  % (fname_prefix, fname_prefix)
+        assert self.sampler_type == "Random" # Only random trajectory sampler is supported.
+
+        # Take only the accepted points
+        q_accepted = np.zeros((len(self.phi_q), 2))
+        for i in range(len(self.phi_q)): # For each iteration.
+            q_accepted[i, :] = self.phi_q[i][0, :] # Take the first point.
+
+        # Total number of samples from which to make the movie.
+        idx = 0
+        for i in range(len(self.phi_q)): # For each iteration.
+            phi_q_tmp = self.phi_q[i] # Grab the trajectory.
+            phi_q_tmp_len = phi_q_tmp.shape[0] # Length of the trajectory.
+            decision = self.decision_chain[i]
+            for j in range(phi_q_tmp_len): # For each point in the trajectory, make a slide.
+                if (idx % 100)==0:
+                    print "Working on slide %d" % idx
+                self.make_slide(title_prefix, idx, phi_q_tmp[:j+1], q_accepted[:i,:], decision, q0, cov0, plot_cov, \
+                    qmin=qmin, qmax=qmax)
+                idx += 1 # Increment the index every time 
+
+        print "Use the following command to make a movie:\nffmpeg -r 1 -start_number 0 -i %s-slide-%%d.png -vcodec mpeg4 -y %s-movie.mp4"  % (title_prefix, title_prefix)
         
         return 
     
-    def make_slide(self, fname_prefix, idx_chain_start, idx_chain, l, idx_slide, dx =0.1, xmax=4, plot_normal=True, q0=None, cov0=False, plot_cov=True, Ntotal=100):
-        """
-        Make a slide for the movie.
-        Args:
-        - fname_prefix: 
-        - idx_chain: Slide index.
-        - idx_chain_start: Start index.
-        - l: The trajectory time stem number.
-        - idx_slide: Index to be appended to the slide.
-        - Ntotal: Total number of samples to be plotted
-        
-        Trajectory that gets accepted is colored red, otherwise black.
-        """
-        pt_size_previous = 20 # Accepted points between idx_start and now.
-        pt_size_current = pt_size_proposed = 50
-        pt_size_phi = 30 # Size of the trajectory bubble.
-        
-        
-        # Take q1 and q2 that have been accepted so far.
-        q1 = self.phi_q[idx_chain_start:idx_chain, 0, 0]
-        q2 = self.phi_q[idx_chain_start:idx_chain, 0, 1]
-        
-        # Setting boundary and bin size
-        xmin = -xmax
-        
-        # If plotting normal model is requested
-        if plot_normal:
-            assert (q0 is not None) and (cov0 is not None)
-            assert q0.size == self.D
-            xgrid = np.arange(xmin, xmax, 1e-2)
-            q1_marginal = multivariate_normal.pdf(xgrid, mean=q0[0], cov=cov0[0, 0]) * (Ntotal) * dx 
-            q2_marginal = multivariate_normal.pdf(xgrid, mean=q0[1], cov=cov0[1, 1]) * (Ntotal) * dx
-
-        fig, ax_list = plt.subplots(2, 2, figsize = (12, 12))
-        ft_size = 20
-        # ---- Scatter plot
-        # All previous points so far
-        ax_list[0, 0].scatter(q1, q2, s=pt_size_previous, c="black", edgecolors="none")
-        
-        # Current point 
-        ax_list[0, 0].scatter([self.phi_q[idx_chain, 0, 0]], [self.phi_q[idx_chain, 0, 1]], c="red", edgecolors="none", s=pt_size_current)
-        
-        # Current trajectory
-        if self.decision_chain[idx_chain, 0] == 1: # If the proposal is accepted
-            # Empty circle -- red
-            ax_list[0, 0].scatter(self.phi_q[idx_chain, :l, 0], self.phi_q[idx_chain, :l, 1], c="none", edgecolors="red", s=pt_size_phi)
-            ax_list[0, 0].plot(self.phi_q[idx_chain, :l, 0], self.phi_q[idx_chain, :l, 1], c="red", ls="--", lw=1) 
-        else:
-            # Empty circle -- black
-            ax_list[0, 0].scatter(self.phi_q[idx_chain, :l, 0], self.phi_q[idx_chain, :l, 1],  c="none", edgecolors="black", s=pt_size_phi)
-            ax_list[0, 0].plot(self.phi_q[idx_chain, :l, 0], self.phi_q[idx_chain, :l, 1], c="black", ls="--", lw=1) 
-                
-        
-        
+    def make_slide(self, title_prefix, idx, phi_q, q_accepted, decision, q0=None, cov0=None, \
+        plot_cov=False, qmin=-3, qmax=3):
+        fig, ax = plt.subplots(1, figsize=(5, 5))
+        # Plot the truth.
         if plot_cov:
-            plot_cov_ellipse(ax_list[0, 0], [q0], [cov0], 0, 1, MoG_color="Blue")
-        ax_list[0, 0].set_xlabel("q1", fontsize=ft_size)
-        ax_list[0, 0].set_ylabel("q2", fontsize=ft_size)
-        ax_list[0, 0].axis("equal")
-        ax_list[0, 0].set_xlim([-xmax, xmax])
-        ax_list[0, 0].set_ylim([-xmax, xmax])
+            plot_cov_ellipse(ax, [q0], [cov0], 0, 1, MoG_color="Blue", lw=1.)
 
-        # q2 histogram
-#         if idx_chain_start < idx_chain:
-        ax_list[0, 1].hist(q2, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black", orientation="horizontal")
-        if plot_normal:
-            assert (q0 is not None) and (cov0 is not None)
-            ax_list[0, 1].plot(q2_marginal, xgrid, c="green", lw=2)
-        ax_list[0, 1].set_ylim([-xmax, xmax])
-        ax_list[0, 1].set_xlim([0, q1_marginal.max() * 1.5])        
-        ax_list[0, 1].set_ylabel("q2", fontsize=ft_size)
-        # q1 histogram
-#         if idx_chain_start < idx_chain:        
-        ax_list[1, 0].hist(q1, bins=np.arange(-xmax, xmax, dx), histtype="step", color="black")
-        if plot_normal:
-            assert (q0 is not None) and (cov0 is not None)            
-            ax_list[1, 0].plot(xgrid, q1_marginal, c="green", lw=2)
-        ax_list[1, 0].set_xlim([-xmax, xmax])
-        ax_list[1, 0].set_ylim([0, q1_marginal.max() * 1.5])                
-        ax_list[1, 0].set_xlabel("q1", fontsize=ft_size)
+        # Plot all the previously accepted points
+        if q_accepted.shape[0] > 0:
+            q1 = q_accepted[:, 0]
+            q2 = q_accepted[:, 1]
 
-        # Show stats
-        ft_size2 = 15
-        ax_list[1, 1].scatter([0.0, 1.], [0.0, 1.], c="none")
-        ax_list[1, 1].text(0.1, 0.8, "D/Nchain/Niter/Warm-up/Thin", fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.7, "%d\%d\%d\%d\%d" % (self.D, self.Nchain, self.Niter, self.warm_up_num, self.thin_rate), fontsize=ft_size2)        
-        ax_list[1, 1].text(0.1, 0.6, r"R q1/q2: %.3f/%.3f" % (self.R_q[0], self.R_q[1]), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.5, "R median, std: %.3f/ %.3f" % (np.median(self.R_q), np.std(self.R_q)), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.4, "Accept rate before warm up: %.3f" % (self.accept_R_warm_up), fontsize=ft_size2)
-        ax_list[1, 1].text(0.1, 0.3, "Accept rate after warm up: %.3f" % (self.accept_R), fontsize=ft_size2)        
-        ax_list[1, 1].set_xlim([0, 1])
-        ax_list[1, 1].set_ylim([0, 1])
-        
-        fname = fname_prefix + ("-%d" % idx_slide)
-        plt.suptitle("T_MH = %d (T_HMC = %d)" % ((idx_chain * (self.L) + l) * self.D, idx_chain), fontsize=25)
-        plt.savefig(fname, dpi=100, bbox_inches = "tight")
-        plt.close()       
+            # q1_min = np.percentile(q1, 2.5)
+            # q1_max = np.percentile(q1, 97.5)
+            # q1_range = (q1_max - q1_min) * 2.5
+            # q1_center = (q1_max + q1_min)/2.
+            # if q1_range < 1:
+            #     q1_center = 0
+            #     q1_range = 2
+            # q1_min = q1_center - q1_range/2.
+            # q1_max = q1_center + q1_range/2.
 
+            # q2_min = np.percentile(q2, 2.5)
+            # q2_max = np.percentile(q2, 97.5)
+            # q2_range = (q2_max - q2_min) * 2.5
+            # q2_center = (q2_max + q2_min)/2.
+            # if q2_range < 1:
+            #     q2_center = 0
+            #     q2_range = 2
+            # q2_min = q2_center - q2_range/2.
+            # q2_max = q2_center + q2_range/2.  
+            ax.scatter(q1, q2, c="black", s=10, edgecolor="none")
+
+        # Plot the current trajectory
+        phi_q1 = phi_q[:, 0]
+        phi_q2 = phi_q[:, 1]
+        color = "black"
+        if decision:
+            color = "red"
+        ax.scatter(phi_q1, phi_q2, s=5, edgecolor="none", c=color)
+        ax.scatter(phi_q1[-1], phi_q2[-1], c=color, s=30, edgecolor="")
+        ax.plot(phi_q1, phi_q2, c=color, ls="--", lw=0.5)
+
+        ax.set_xlim([qmin, qmax])
+        ax.set_ylim([qmin, qmax])        
+
+        # Save it
+        plt.savefig("%s-slide-%d.png" % (title_prefix, idx), bbox_inches="tight", dpi=200)
+        plt.close()
+
+        return 
 
     # def gen_sample_fixed(self, q_start, save_chain, verbose):
     #     """

@@ -21,6 +21,10 @@ These are conclusions drawn from the below study.
 5) Burn-in: I also find that NUTS may exhibit worse burn-in.
 6) If properly tune, NUTS's (# of expensive computations) / (effective sample) can be much larger, mostly, for low covariance cases.
 
+- Optimal step size: Conservatism is appropriate for a well-functioning pipieline. dt should be chosen small enough that tha acceptance rate hovers around 80% for most challenging cases (e.g., high covariance or small variance due to pecise measurements). Random trajectory range should be chosen so that for a truly high dimensional problem, the particle has an adequate time to move far. For this purpose, trajectory range of 100 to 500 seems a modest compromise. Aim for ESS/(Total number of stored sample) > 0.5.
+
+- Momentum distribution: The momentum distribution cannot be adjusted to improve performance since we use the blocking method this makes it impossible to choose a single momentum distribution that works for all different blocks.
+
 
 
 
@@ -64,8 +68,6 @@ For all options, it should be possible to specify the momentum distribution and 
 - Videos: 
 	- Video is made about the first
 	- Videos should be for the first 100 steps though the whole inference is run regarldess.
-	- Show the total number of time steps after warm-up.
-	- Show the total number of effective samples after warm-up. 
 	- Once videos are created, all supporting files are immediately discarded.
 
 
@@ -75,24 +77,93 @@ For all options, it should be possible to specify the momentum distribution and 
 /---- Case studies
 - Case study 1: Unit multi-variate normal of dimensionality [2, 10, 100]
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
-	- Video: Yes
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case1-script.py
+	- case-1a:
+		- D=2
+		- Video and summary plots.
+	- case-1b:
+		- D=10
+		- Video and summary plots.
+	- case-1c:
+		- D=100
+		- Video and summary plots.
+
 
 - Case study 2: Unit multi-variate normal of dimensionality [2, 10, 100] with bad starting point
-	- Hyper-parameters: Single time step, starting distribution with 100 * I
-	- Video: Yes
+	- Hyper-parameters: Single time step, starting distribution with 100 * I. 
+	The first one get extra large starting point for illustration purposes.
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case2-script.py
+	- case-2a:
+		- D=2
+		- Video and summary plots.
+	- case-2b:
+		- D=10
+		- Video and summary plots.
+	- case-2c:
+		- D=100
+		- Video and summary plots.
+
 
 - Case study 3: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.95
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
-	- Video: Yes
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case3-script.py
+	- case-3a:
+		- D=2
+		- Video and summary plots.
+	- case-3b:
+		- D=10
+		- Video and summary plots.
+	- case-3c:
+		- D=100
+		- Video and summary plots.
+	- case-3d:
+		- D=100, dt=1e-1, L_low=50, L_high=200
+		- case-3c showed inadequate convergence. Not enough steps for the HMC to travel far enough. Also, acceptance rate was ~80%. The acceptance rate doesn't seem to be problematic.
+		- Video and summary plots. 
+
 
 - Case study 4: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.99
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
-	- Video: Yes
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case4-script.py
+	- case-4a:
+		- D=2
+		- Video and summary plots.
+	- case-4b:
+		- D=10
+		- Video and summary plots.
+	- case-4c:
+		- D=100
+		- Video and summary plots.
+	- case-4d:
+		- D=100, dt=5e-2, L_low=50, L_high=200
+		- case-4bc showed inadequate convergence. I only attempt to improve the last case as it is the more challenging.
+		- Video and summary plots. 
+
+
 
 - Case study 5: Multi-variate normal of dimensionality [2, 10, 100] with rho = 0.999
 	- Hyper-parameters: Single time step, starting distribution with 2 * I
-	- Video: Yes
-
+	- Common: dt=1e-1, L_low=5, L_high=20
+	- Script used: case5-script.py
+	- case-5a:
+		- D=2
+		- Video and summary plots.
+	- case-5b:
+		- D=10
+		- Video and summary plots.
+	- case-5c:
+		- D=100
+		- Video and summary plots.
+	- case-5d:
+		- D=100, dt=1e-2, L_low=200, L_high=1000
+		- case-5abc showed complete failures. I only attempt to improve the last case as it is the more challenging.This worked quite adequately.
+		- Video and summary plots. 
+	
+	
 - Case study 6: Multi-variate normal of dimensionality [2, 10, 100] with random variance
 	- Hyper-parameters: Single time step, starting distribution with 100 * I
 	- Variance: log-uniform sampling from [0, 100]
